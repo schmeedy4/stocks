@@ -61,4 +61,18 @@ final class DividendController
 
         return $this->dividendService->addDividend($dividend, $payer->payerCountryCode);
     }
+
+    /** @return Dividend[] */
+    public function listForYear(int $year): array
+    {
+        $userId = $this->authService->requireUserId();
+        return $this->dividendService->getDividendsForYear($userId, $year);
+    }
+
+    /** @return \App\Models\DividendPayer[] */
+    public function listActivePayers(): array
+    {
+        $userId = $this->authService->requireUserId();
+        return $this->payerRepository->findActiveByUser($userId);
+    }
 }

@@ -39,4 +39,29 @@ final class DividendPayerRepository
             isActive: (bool) $row['is_active'],
         );
     }
+
+    /** @return DividendPayer[] */
+    public function findActiveByUser(int $userId): array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM dividend_payer WHERE user_id = :user_id AND is_active = 1 ORDER BY payer_name');
+        $stmt->execute(['user_id' => $userId]);
+
+        $payers = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $payers[] = new DividendPayer(
+                id: (int) $row['id'],
+                userId: (int) $row['user_id'],
+                payerName: $row['payer_name'],
+                payerAddress: $row['payer_address'],
+                payerCountryCode: $row['payer_country_code'],
+                payerSiTaxId: $row['payer_si_tax_id'],
+                payerForeignTaxId: $row['payer_foreign_tax_id'],
+                defaultSourceCountryCode: $row['default_source_country_code'],
+                defaultDividendTypeCode: $row['default_dividend_type_code'],
+                isActive: (bool) $row['is_active'],
+            );
+        }
+
+        return $payers;
+    }
 }

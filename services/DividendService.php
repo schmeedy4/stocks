@@ -26,6 +26,12 @@ final class DividendService
         $this->dividendRepository->update($dividend);
     }
 
+    /** @return Dividend[] */
+    public function getDividendsForYear(int $userId, int $year): array
+    {
+        return $this->dividendRepository->findByUserAndYear($userId, $year);
+    }
+
     private function validate(Dividend $dividend, string $payerCountryCode): void
     {
         if ($dividend->grossAmountEur <= 0) {

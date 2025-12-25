@@ -42,10 +42,31 @@ $tradeService = new TradeService($tradeRepository, $lotRepository, $allocationRe
 
 $action = $_GET['action'] ?? '';
 
+/** @return array<int, array{type:string,message:string}> */
+function collectFlashes(): array
+{
+    $messages = $_SESSION['flash_messages'] ?? [];
+    unset($_SESSION['flash_messages']);
+
+    return $messages;
+}
+
+function addFlash(string $type, string $message): void
+{
+    $_SESSION['flash_messages'][] = ['type' => $type, 'message' => $message];
+}
+
 try {
-    if ($action === 'add_dividend') {
-        $id = $dividendController->addFromRequest($_POST);
-        echo json_encode(['dividend_id' => $id], JSON_THROW_ON_ERROR);
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'add_dividend') {
+        try {
+            $dividendController->addFromRequest($_POST);
+            addFlash('success', 'Dividend saved.');
+        } catch (Throwable $e) {
+            addFlash('error', $e->getMessage());
+        }
+
+        $yearForRedirect = isset($_POST['year']) ? (int) $_POST['year'] : (int) ($_GET['year'] ?? (new DateTimeImmutable())->format('Y'));
+        header('Location: /?action=dividends&year=' . $yearForRedirect);
         return;
     }
 
@@ -55,6 +76,19 @@ try {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="doh-div-' . $year . '.csv"');
         echo $csv;
+        return;
+    }
+
+    if ($action === 'dividends' || $action === '') {
+        $year = (int) ($_GET['year'] ?? (new DateTimeImmutable())->format('Y'));
+        $dividends = $dividendController->listForYear($year);
+        $payers = [];
+        foreach ($dividendController->listActivePayers() as $payer) {
+            $payers[$payer->id] = $payer;
+        }
+        $flashes = collectFlashes();
+
+        require __DIR__ . '/../views/dividends.php';
         return;
     }
 
