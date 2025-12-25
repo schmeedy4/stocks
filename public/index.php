@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Controllers\AuthController;
 use App\Controllers\DividendController;
 use App\Controllers\ExportController;
 use App\Exports\DohDivCsvExporter;
@@ -19,12 +20,18 @@ use App\Services\DividendService;
 use App\Services\TradeService;
 
 require __DIR__ . '/../bootstrap.php';
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 $config = require __DIR__ . '/../config/config.php';
 
 $pdo = DatabaseConnector::connect($config['db']);
 
 $userRepository = new UserRepository($pdo);
 $authService = new AuthService($userRepository);
+$authController = new AuthController($authService);
 
 $dividendRepository = new DividendRepository($pdo);
 $payerRepository = new DividendPayerRepository($pdo);
@@ -40,7 +47,7 @@ $lotRepository = new TradeLotRepository($pdo);
 $allocationRepository = new TradeLotAllocationRepository($pdo);
 $tradeService = new TradeService($tradeRepository, $lotRepository, $allocationRepository);
 
-$action = $_GET['action'] ?? '';
+$action = $_GET['action'] ?? 'dividends';
 
 /** @return array<int, array{type:string,message:string}> */
 function collectFlashes(): array
@@ -57,6 +64,36 @@ function addFlash(string $type, string $message): void
 }
 
 try {
+    if ($action !== 'login') {
+        require_auth();
+    }
+
+    if ($action === 'login') {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                $authController->loginPost((string) ($_POST['email'] ?? ''), (string) ($_POST['password'] ?? ''));
+                addFlash('success', 'Logged in.');
+                header('Location: /?action=dividends');
+                return;
+            } catch (Throwable $e) {
+                addFlash('error', $e->getMessage());
+                header('Location: /?action=login');
+                return;
+            }
+        }
+
+        $flashes = collectFlashes();
+        $authController->showLogin($flashes);
+        return;
+    }
+
+    if ($action === 'logout') {
+        $authController->logout();
+        addFlash('success', 'Logged out.');
+        header('Location: /?action=login');
+        return;
+    }
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'add_dividend') {
         try {
             $dividendController->addFromRequest($_POST);

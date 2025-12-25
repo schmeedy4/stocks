@@ -32,6 +32,11 @@ final class AuthService
         return $user;
     }
 
+    public function logout(): void
+    {
+        unset($_SESSION['user_id']);
+    }
+
     public function requireUserId(): int
     {
         if (!isset($_SESSION['user_id'])) {

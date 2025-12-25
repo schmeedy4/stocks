@@ -2,34 +2,11 @@
 /** @var int $year */
 /** @var array $dividends */
 /** @var array $payers */
-/** @var array $flashes */
+/** @var array<int, array{type:string,message:string}> $flashes */
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Dividends</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        form { margin-bottom: 24px; padding: 12px; border: 1px solid #ccc; }
-        label { display: block; margin-top: 8px; }
-        input, select { padding: 6px; width: 260px; max-width: 100%; }
-        table { border-collapse: collapse; width: 100%; margin-top: 12px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .flash { padding: 10px; margin-bottom: 12px; }
-        .flash-success { background: #e1f3e0; border: 1px solid #7db973; }
-        .flash-error { background: #fbe4e6; border: 1px solid #d76b6b; }
-    </style>
-</head>
-<body>
+<?php ob_start(); ?>
 <h1>Dividend Management</h1>
-
-<?php foreach ($flashes as $flash): ?>
-    <div class="flash flash-<?php echo htmlspecialchars($flash['type'], ENT_QUOTES, 'UTF-8'); ?>">
-        <?php echo htmlspecialchars($flash['message'], ENT_QUOTES, 'UTF-8'); ?>
-    </div>
-<?php endforeach; ?>
-
+<p><a href="?action=logout">Logout</a></p>
 <form method="get">
     <input type="hidden" name="action" value="dividends">
     <label>
@@ -88,7 +65,7 @@
 <?php if (empty($dividends)): ?>
     <p>No dividends recorded for this year.</p>
 <?php else: ?>
-    <table>
+    <table border="1" cellpadding="4" cellspacing="0">
         <thead>
         <tr>
             <th>Date</th>
@@ -125,5 +102,7 @@
     </label>
     <button type="submit">Download CSV</button>
 </form>
-</body>
-</html>
+<?php
+$content = (string) ob_get_clean();
+$title = 'Dividends';
+require __DIR__ . '/layout.php';
