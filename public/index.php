@@ -78,6 +78,49 @@ switch ($action) {
         $controller->update_post($id);
         break;
 
+    case 'trades':
+        $controller = new TradeController();
+        $controller->list();
+        break;
+
+    case 'trade_new_buy':
+        $controller = new TradeController();
+        $controller->new_buy();
+        break;
+
+    case 'trade_create_buy':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=trades');
+            exit;
+        }
+        $controller = new TradeController();
+        $controller->create_buy_post();
+        break;
+
+    case 'trade_new_sell':
+        $controller = new TradeController();
+        $controller->new_sell();
+        break;
+
+    case 'trade_create_sell':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=trades');
+            exit;
+        }
+        $controller = new TradeController();
+        $controller->create_sell_post();
+        break;
+
+    case 'trade_view_sell':
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=trades');
+            exit;
+        }
+        $controller = new TradeController();
+        $controller->view_sell($id);
+        break;
+
     case 'dividends':
         require_once __DIR__ . '/../infrastructure/auth.php';
         require_auth();

@@ -200,6 +200,7 @@ CREATE TABLE trade (
 
   quantity DECIMAL(18,6) NOT NULL,
   price_per_unit DECIMAL(18,8) NOT NULL,
+  price_eur DECIMAL(18,8) NOT NULL,
   trade_currency CHAR(3) NOT NULL,
 
   fee_amount DECIMAL(18,8) NULL,
@@ -230,8 +231,8 @@ CREATE TABLE trade (
   CONSTRAINT fk_trade_updated_by FOREIGN KEY (updated_by) REFERENCES user(id),
 
   CONSTRAINT chk_trade_qty_pos CHECK (quantity > 0),
-  CONSTRAINT chk_trade_price_pos CHECK (price_per_unit > 0),
-  CONSTRAINT chk_trade_total_pos CHECK (total_value_eur > 0),
+  CONSTRAINT chk_trade_price_pos CHECK (price_per_unit >= 0),
+  CONSTRAINT chk_trade_total_pos CHECK (total_value_eur >= 0),
   CONSTRAINT chk_trade_fee_nonneg CHECK (fee_eur >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
