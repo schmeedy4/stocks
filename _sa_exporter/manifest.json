@@ -5,11 +5,6 @@
     "description": "Export Seeking Alpha news/article content to JSON.",
     "permissions": ["activeTab", "scripting", "downloads"],
     "host_permissions": ["https://seekingalpha.com/*", "https://www.seekingalpha.com/*"],
-    "background": {
-      "service_worker": "background.js"
-    },
-    "action": {
-      "default_title": "Export SA article"
-    }
+    "background": { "service_worker": "background.js" },
+    "action": { "default_title": "Export SA article" }
   }
-  
