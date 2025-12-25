@@ -36,9 +36,46 @@ switch ($action) {
         break;
 
     case 'instruments':
-        require_once __DIR__ . '/../infrastructure/auth.php';
-        require_auth();
-        require __DIR__ . '/../views/instruments/list.php';
+        $controller = new InstrumentController();
+        $controller->list();
+        break;
+
+    case 'instrument_new':
+        $controller = new InstrumentController();
+        $controller->new();
+        break;
+
+    case 'instrument_create':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=instruments');
+            exit;
+        }
+        $controller = new InstrumentController();
+        $controller->create_post();
+        break;
+
+    case 'instrument_edit':
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=instruments');
+            exit;
+        }
+        $controller = new InstrumentController();
+        $controller->edit($id);
+        break;
+
+    case 'instrument_update':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=instruments');
+            exit;
+        }
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=instruments');
+            exit;
+        }
+        $controller = new InstrumentController();
+        $controller->update_post($id);
         break;
 
     case 'dividends':
