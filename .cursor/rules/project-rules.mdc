@@ -1,0 +1,159 @@
+---
+alwaysApply: true
+---
+# Cursor Architecture Rules (PHP Portfolio Tracker)
+
+## Goals
+- Multi-user web app (session auth)
+- Track instruments, trades (BUY/SELL), dividends, payers
+- FIFO capital gains allocations
+- Export Slovenian tax CSV (DOH-DIV) and later capital gains format
+- Boring, predictable, maintainable code
+
+## Tech stack
+- PHP 8.2, strict_types=1
+- MySQL 8, PDO prepared statements only
+- No framework, no ORM
+- Server-rendered HTML (no JS needed for v1)
+- UTF-8 everywhere
+
+---
+
+## Folder structure (fixed)
+- `public/`  
+  - `index.php` front controller / router only
+- `controllers/`  
+  - HTTP handling only (read input, call services, choose view/redirect)
+- `services/`  
+  - Business logic, validation, orchestration, FIFO, export preparation
+- `repositories/`  
+  - SQL only, no business logic, return models/DTOs
+- `models/`  
+  - Simple typed data containers (entities/DTOs)
+- `exports/`  
+  - Pure export formatting (CSV), no DB access
+- `infrastructure/`  
+  - DB connector, autoloader, session/auth helpers
+- `views/` (to be added)
+  - PHP templates only, minimal HTML
+
+---
+
+## Layer responsibilities
+### Controllers
+- Must be thin (no SQL, no complex calculations)
+- Validate request shape (required fields exist) but not domain rules
+- Call exactly one service per action (or orchestrate 2 max)
+- Use PRG pattern: POST → redirect → GET
+
+### Services
+- All domain rules live here:
+  - dividend validation rules
+  - FIFO lot allocation logic
+  - calculations (EUR totals, proportional fee distribution)
+- Services can call multiple repositories
+- Services throw typed exceptions on validation errors
+
+### Repositories
+- Only SQL + mapping to models
+- Always use prepared statements
+- Must always filter by `user_id` for user-owned tables
+- Never format dates/currency; never compute FIFO
+
+### Exports
+- Accept prepared data and return string/stream
+- No DB calls
+- Must produce exact required formats (DOH-DIV spec)
+
+### Views
+- No SQL, no service calls
+- Display variables passed by controllers
+- Escape output (HTML entities) except trusted values
+
+---
+
+## Naming conventions
+- snake_case for DB columns (already)
+- PHP:
+  - classes: PascalCase
+  - methods: snake_case (preferred)
+- Files match class names: `DividendService.php`, etc.
+
+---
+
+## Security rules (mandatory)
+- All authenticated routes must require session `user_id`
+- Controllers must call `require_auth()` at start (except login routes)
+- Every repository query for per-user tables must include `WHERE user_id = :user_id`
+- Never trust `$_POST['user_id']` / `$_GET['user_id']` from client
+
+---
+
+## Data rules
+### Money
+- Never use float for money math
+- Use DECIMAL in DB (already) and string/decimal-safe operations in PHP
+- Always store computed totals used for tax exports (reproducible)
+
+### Dates
+- Use `DateTimeImmutable` internally
+- Store dates as `DATE` in DB
+- DOH-DIV export date format: `DD. MM. YYYY`
+
+### Dividends (DOH-DIV constraints)
+- `gross_amount_eur > 0`
+- `foreign_tax_eur <= gross_amount_eur`
+- If payer country = `SI`, `foreign_tax_eur` must be NULL/empty
+- If same foreign payer has multiple dividends on same day, exported payer ident must be unique:
+  - use `payer_ident_for_export` if set
+  - otherwise generate sequential `1..N` during export for that payer+date
+
+### Trades + FIFO
+- BUY creates one lot in `trade_lot`
+- SELL consumes lots FIFO by: `opened_date ASC, id ASC`
+- SELL creates 1..N `trade_lot_allocation` rows
+- Fees:
+  - Buy fee included into lot cost basis (proportional)
+  - Sell fee reduces proceeds (allocated proportionally)
+
+---
+
+## Router rules (`public/index.php`)
+- Router is explicit `?action=...` mapping
+- No dynamic controller resolution
+- Allowed actions must be listed in a switch statement
+
+---
+
+## Error handling rules
+- Services throw exceptions:
+  - `ValidationException` (field errors)
+  - `NotFoundException`
+  - `UnauthorizedException`
+- Controllers catch and render errors in views
+- No `die()` or `var_dump()` in production paths
+
+---
+
+## Cursor behavior rules (for AI)
+When implementing changes:
+1. Keep edits minimal and localized
+2. Do not rename DB columns or tables
+3. Do not introduce new frameworks or dependencies
+4. Prefer adding new files over rewriting many existing files
+5. If adding a feature, also add:
+   - server-side validation
+   - repository methods with `user_id` filtering
+6. If uncertain, choose the simplest working solution and comment assumptions
+
+---
+
+## Feature delivery order (step-by-step)
+1. Auth (login/logout + require_auth)
+2. Instruments CRUD (catalog)
+3. Trades CRUD (BUY/SELL + FIFO allocation view)
+4. Payers CRUD
+5. Dividends CRUD
+6. DOH-DIV export page
+7. Imports (Revolut CSV) (later)
+8. Capital gains export format (after template found)
