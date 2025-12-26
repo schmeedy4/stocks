@@ -165,5 +165,56 @@ class TradeLotRepository
             'cost_basis_eur' => $data['cost_basis_eur'],
         ]);
     }
+
+    public function list_open_lots_for_split(int $user_id, int $instrument_id, string $split_date): array
+    {
+        $stmt = $this->db->prepare('
+            SELECT id, user_id, buy_trade_id, instrument_id, opened_date,
+                   quantity_opened, quantity_remaining, cost_basis_eur
+            FROM trade_lot
+            WHERE user_id = :user_id 
+              AND instrument_id = :instrument_id 
+              AND opened_date <= :split_date
+              AND quantity_remaining > 0
+            ORDER BY opened_date ASC, id ASC
+        ');
+        $stmt->execute([
+            'user_id' => $user_id,
+            'instrument_id' => $instrument_id,
+            'split_date' => $split_date,
+        ]);
+
+        $lots = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $lots[] = new TradeLot(
+                (int) $row['id'],
+                (int) $row['user_id'],
+                (int) $row['buy_trade_id'],
+                (int) $row['instrument_id'],
+                $row['opened_date'],
+                $row['quantity_opened'],
+                $row['quantity_remaining'],
+                $row['cost_basis_eur']
+            );
+        }
+
+        return $lots;
+    }
+
+    public function update_lot_quantities(int $user_id, int $lot_id, string $qty_opened, string $qty_remaining): void
+    {
+        $stmt = $this->db->prepare('
+            UPDATE trade_lot
+            SET quantity_opened = :qty_opened,
+                quantity_remaining = :qty_remaining
+            WHERE user_id = :user_id AND id = :lot_id
+        ');
+        $stmt->execute([
+            'user_id' => $user_id,
+            'lot_id' => $lot_id,
+            'qty_opened' => $qty_opened,
+            'qty_remaining' => $qty_remaining,
+        ]);
+    }
 }
 

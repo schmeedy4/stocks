@@ -151,6 +151,20 @@ switch ($action) {
         require __DIR__ . '/../views/dividends/list.php';
         break;
 
+    case 'corporate_actions':
+        $controller = new CorporateActionController();
+        $controller->show_split_form();
+        break;
+
+    case 'corporate_action_apply_split':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=corporate_actions');
+            exit;
+        }
+        $controller = new CorporateActionController();
+        $controller->apply_split_post();
+        break;
+
     default:
         header('Location: ?action=login');
         exit;
