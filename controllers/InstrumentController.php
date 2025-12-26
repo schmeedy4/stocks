@@ -16,8 +16,7 @@ class InstrumentController
 
     public function list(): void
     {
-        $q = $_GET['q'] ?? '';
-        $instruments = $this->instrument_service->list($q);
+        $instruments = $this->instrument_service->list('');
 
         require __DIR__ . '/../views/instruments/list.php';
     }

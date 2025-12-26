@@ -30,12 +30,13 @@ class TradeService
             throw new ValidationException('Validation failed', $errors);
         }
 
-        // Calculate total_value_eur = quantity * price_per_unit * fx_rate_to_eur
-        $total_value_eur = $this->calculate_total_value(
-            $input['quantity'],
-            $input['price_per_unit'],
-            $input['fx_rate_to_eur']
-        );
+        // Calculate price_eur = round(price_per_unit * fx_rate_to_eur, 8)
+        $price_eur = $this->multiply_decimals($input['price_per_unit'], $input['fx_rate_to_eur']);
+        $price_eur = $this->round_decimal($price_eur, 8);
+
+        // Calculate total_value_eur = round(quantity * price_eur, 2)
+        $total_value_eur = $this->multiply_decimals($input['quantity'], $price_eur);
+        $total_value_eur = $this->round_decimal($total_value_eur, 2);
 
         $fee_eur = isset($input['fee_eur']) && $input['fee_eur'] !== '' 
             ? $this->round_decimal($input['fee_eur'], 2)
@@ -49,6 +50,7 @@ class TradeService
             'trade_date' => $input['trade_date'],
             'quantity' => $this->round_decimal($input['quantity'], 6),
             'price_per_unit' => $this->round_decimal($input['price_per_unit'], 8),
+            'price_eur' => $price_eur,
             'trade_currency' => strtoupper(trim($input['trade_currency'])),
             'fee_amount' => $input['fee_amount'] ?? null,
             'fee_currency' => isset($input['fee_currency']) ? strtoupper(trim($input['fee_currency'])) : null,
@@ -93,12 +95,13 @@ class TradeService
             throw new ValidationException('Validation failed', $errors);
         }
 
-        // Calculate total_value_eur = quantity * price_per_unit * fx_rate_to_eur
-        $total_value_eur = $this->calculate_total_value(
-            $input['quantity'],
-            $input['price_per_unit'],
-            $input['fx_rate_to_eur']
-        );
+        // Calculate price_eur = round(price_per_unit * fx_rate_to_eur, 8)
+        $price_eur = $this->multiply_decimals($input['price_per_unit'], $input['fx_rate_to_eur']);
+        $price_eur = $this->round_decimal($price_eur, 8);
+
+        // Calculate total_value_eur = round(quantity * price_eur, 2)
+        $total_value_eur = $this->multiply_decimals($sell_qty, $price_eur);
+        $total_value_eur = $this->round_decimal($total_value_eur, 2);
 
         $fee_eur = isset($input['fee_eur']) && $input['fee_eur'] !== '' 
             ? $this->round_decimal($input['fee_eur'], 2)
@@ -112,6 +115,7 @@ class TradeService
             'trade_date' => $input['trade_date'],
             'quantity' => $sell_qty,
             'price_per_unit' => $this->round_decimal($input['price_per_unit'], 8),
+            'price_eur' => $price_eur,
             'trade_currency' => strtoupper(trim($input['trade_currency'])),
             'fee_amount' => $input['fee_amount'] ?? null,
             'fee_currency' => isset($input['fee_currency']) ? strtoupper(trim($input['fee_currency'])) : null,
@@ -208,6 +212,209 @@ class TradeService
         ];
     }
 
+    public function get_trade(int $user_id, int $trade_id): Trade
+    {
+        $trade = $this->trade_repo->find_by_id($user_id, $trade_id);
+        if ($trade === null) {
+            throw new NotFoundException('Trade not found');
+        }
+        return $trade;
+    }
+
+    public function update_buy(int $user_id, int $trade_id, array $input): void
+    {
+        $errors = $this->validate($input);
+
+        if (!empty($errors)) {
+            throw new ValidationException('Validation failed', $errors);
+        }
+
+        $existing_trade = $this->trade_repo->find_by_id($user_id, $trade_id);
+        if ($existing_trade === null || $existing_trade->trade_type !== 'BUY') {
+            throw new NotFoundException('Buy trade not found');
+        }
+
+        // Calculate price_eur = round(price_per_unit * fx_rate_to_eur, 8)
+        $price_eur = $this->multiply_decimals($input['price_per_unit'], $input['fx_rate_to_eur']);
+        $price_eur = $this->round_decimal($price_eur, 8);
+
+        // Calculate total_value_eur = round(quantity * price_eur, 2)
+        $total_value_eur = $this->multiply_decimals($input['quantity'], $price_eur);
+        $total_value_eur = $this->round_decimal($total_value_eur, 2);
+
+        $fee_eur = isset($input['fee_eur']) && $input['fee_eur'] !== '' 
+            ? $this->round_decimal($input['fee_eur'], 2)
+            : '0.00';
+
+        // Update trade
+        $trade_data = [
+            'broker_account_id' => $input['broker_account_id'] ?? null,
+            'instrument_id' => (int) $input['instrument_id'],
+            'trade_date' => $input['trade_date'],
+            'quantity' => $this->round_decimal($input['quantity'], 6),
+            'price_per_unit' => $this->round_decimal($input['price_per_unit'], 8),
+            'price_eur' => $price_eur,
+            'trade_currency' => strtoupper(trim($input['trade_currency'])),
+            'fee_amount' => $input['fee_amount'] ?? null,
+            'fee_currency' => isset($input['fee_currency']) ? strtoupper(trim($input['fee_currency'])) : null,
+            'fx_rate_to_eur' => $this->round_decimal($input['fx_rate_to_eur'], 8),
+            'total_value_eur' => $total_value_eur,
+            'fee_eur' => $fee_eur,
+            'notes' => $input['notes'] ?? null,
+        ];
+
+        $this->trade_repo->update_trade($user_id, $trade_id, $trade_data);
+
+        // Update lot: cost_basis includes buy fee
+        $lot = $this->lot_repo->find_by_buy_trade_id($user_id, $trade_id);
+        if ($lot !== null) {
+            $cost_basis_eur = $this->add_decimals($total_value_eur, $fee_eur);
+            $new_quantity = $this->round_decimal($input['quantity'], 6);
+            
+            // Calculate new quantity_remaining based on ratio if quantity changed
+            $qty_ratio = $this->divide_decimals($new_quantity, $lot->quantity_opened);
+            $new_quantity_remaining = $this->multiply_decimals($lot->quantity_remaining, $qty_ratio);
+            $new_quantity_remaining = $this->round_decimal($new_quantity_remaining, 6);
+
+            $lot_data = [
+                'instrument_id' => (int) $input['instrument_id'],
+                'opened_date' => $input['trade_date'],
+                'quantity_opened' => $new_quantity,
+                'quantity_remaining' => $new_quantity_remaining,
+                'cost_basis_eur' => $cost_basis_eur,
+            ];
+
+            $this->lot_repo->update_lot($user_id, $lot->id, $lot_data);
+        }
+    }
+
+    public function update_sell(int $user_id, int $trade_id, array $input): void
+    {
+        $errors = $this->validate($input);
+        $instrument_id = (int) $input['instrument_id'];
+
+        $existing_trade = $this->trade_repo->find_by_id($user_id, $trade_id);
+        if ($existing_trade === null || $existing_trade->trade_type !== 'SELL') {
+            throw new NotFoundException('Sell trade not found');
+        }
+
+        // Get existing allocations
+        $existing_allocations = $this->allocation_repo->list_by_sell_trade($user_id, $trade_id);
+        
+        // Check if quantity/price changed - if so, need to recalculate allocations
+        $new_quantity = $this->round_decimal($input['quantity'], 6);
+        $quantity_changed = $this->compare_decimals($new_quantity, $existing_trade->quantity) !== 0;
+        
+        $new_price_eur = $this->multiply_decimals($input['price_per_unit'], $input['fx_rate_to_eur']);
+        $new_price_eur = $this->round_decimal($new_price_eur, 8);
+        $price_changed = $this->compare_decimals($new_price_eur, $existing_trade->price_eur) !== 0;
+
+        if ($quantity_changed) {
+            // Check user has enough open quantity (accounting for what we're about to restore)
+            $total_open_qty = $this->lot_repo->get_total_open_quantity($user_id, $instrument_id);
+            // Add back the quantity from existing allocations
+            foreach ($existing_allocations as $alloc_data) {
+                $total_open_qty = $this->add_decimals($total_open_qty, $alloc_data['allocation']->quantity_consumed);
+            }
+            
+            if ($this->compare_decimals($total_open_qty, $new_quantity) < 0) {
+                $errors['quantity'] = 'Insufficient quantity. Available: ' . $total_open_qty;
+            }
+        }
+
+        if (!empty($errors)) {
+            throw new ValidationException('Validation failed', $errors);
+        }
+
+        // Calculate price_eur and total_value_eur
+        $price_eur = $new_price_eur;
+        $total_value_eur = $this->multiply_decimals($new_quantity, $price_eur);
+        $total_value_eur = $this->round_decimal($total_value_eur, 2);
+
+        $fee_eur = isset($input['fee_eur']) && $input['fee_eur'] !== '' 
+            ? $this->round_decimal($input['fee_eur'], 2)
+            : '0.00';
+
+        // If quantity or price changed, need to reverse and recreate allocations
+        if ($quantity_changed || $price_changed) {
+            // Reverse allocations: restore lot quantities
+            foreach ($existing_allocations as $alloc_data) {
+                $alloc = $alloc_data['allocation'];
+                $lot = $this->lot_repo->find_by_id($user_id, $alloc->trade_lot_id);
+                if ($lot !== null) {
+                    $restored_qty = $this->add_decimals($lot->quantity_remaining, $alloc->quantity_consumed);
+                    $restored_qty = $this->round_decimal($restored_qty, 6);
+                    $this->lot_repo->update_quantity_remaining($user_id, $lot->id, $restored_qty);
+                }
+            }
+
+            // Delete existing allocations
+            $this->allocation_repo->delete_by_sell_trade($user_id, $trade_id);
+
+            // Recreate allocations with new values
+            $sell_proceeds_net_eur = $this->subtract_decimals($total_value_eur, $fee_eur);
+            $lots = $this->lot_repo->list_open_lots_fifo($user_id, $instrument_id);
+            
+            $remaining_to_consume = $new_quantity;
+            foreach ($lots as $lot) {
+                if ($this->compare_decimals($remaining_to_consume, '0') <= 0) {
+                    break;
+                }
+
+                $qty_to_consume = $this->min_decimal($remaining_to_consume, $lot->quantity_remaining);
+                $proceeds_part_eur = $this->multiply_decimals(
+                    $sell_proceeds_net_eur,
+                    $this->divide_decimals($qty_to_consume, $new_quantity)
+                );
+                $cost_basis_part_eur = $this->multiply_decimals(
+                    $lot->cost_basis_eur,
+                    $this->divide_decimals($qty_to_consume, $lot->quantity_opened)
+                );
+
+                $proceeds_part_eur = $this->round_decimal($proceeds_part_eur, 2);
+                $cost_basis_part_eur = $this->round_decimal($cost_basis_part_eur, 2);
+                $realized_pnl_eur = $this->subtract_decimals($proceeds_part_eur, $cost_basis_part_eur);
+                $realized_pnl_eur = $this->round_decimal($realized_pnl_eur, 2);
+
+                $allocation_data = [
+                    'sell_trade_id' => $trade_id,
+                    'trade_lot_id' => $lot->id,
+                    'quantity_consumed' => $this->round_decimal($qty_to_consume, 6),
+                    'proceeds_eur' => $proceeds_part_eur,
+                    'cost_basis_eur' => $cost_basis_part_eur,
+                    'realized_pnl_eur' => $realized_pnl_eur,
+                ];
+
+                $this->allocation_repo->create_allocation($user_id, $allocation_data);
+
+                $new_remaining = $this->subtract_decimals($lot->quantity_remaining, $qty_to_consume);
+                $new_remaining = $this->round_decimal($new_remaining, 6);
+                $this->lot_repo->update_quantity_remaining($user_id, $lot->id, $new_remaining);
+
+                $remaining_to_consume = $this->subtract_decimals($remaining_to_consume, $qty_to_consume);
+            }
+        }
+
+        // Update trade
+        $trade_data = [
+            'broker_account_id' => $input['broker_account_id'] ?? null,
+            'instrument_id' => $instrument_id,
+            'trade_date' => $input['trade_date'],
+            'quantity' => $new_quantity,
+            'price_per_unit' => $this->round_decimal($input['price_per_unit'], 8),
+            'price_eur' => $price_eur,
+            'trade_currency' => strtoupper(trim($input['trade_currency'])),
+            'fee_amount' => $input['fee_amount'] ?? null,
+            'fee_currency' => isset($input['fee_currency']) ? strtoupper(trim($input['fee_currency'])) : null,
+            'fx_rate_to_eur' => $this->round_decimal($input['fx_rate_to_eur'], 8),
+            'total_value_eur' => $total_value_eur,
+            'fee_eur' => $fee_eur,
+            'notes' => $input['notes'] ?? null,
+        ];
+
+        $this->trade_repo->update_trade($user_id, $trade_id, $trade_data);
+    }
+
     private function validate(array $input): array
     {
         $errors = [];
@@ -236,11 +443,11 @@ class TradeService
             $errors['quantity'] = 'Quantity must be greater than 0';
         }
 
-        // price_per_unit > 0
+        // price_per_unit >= 0
         if (!isset($input['price_per_unit']) || $input['price_per_unit'] === '') {
             $errors['price_per_unit'] = 'Price per unit is required';
-        } elseif ($this->compare_decimals($input['price_per_unit'], '0') <= 0) {
-            $errors['price_per_unit'] = 'Price per unit must be greater than 0';
+        } elseif ($this->compare_decimals($input['price_per_unit'], '0') < 0) {
+            $errors['price_per_unit'] = 'Price per unit cannot be negative';
         }
 
         // trade_currency required (3 letters)
@@ -268,13 +475,6 @@ class TradeService
     }
 
     // Decimal-safe math functions
-    private function calculate_total_value(string $quantity, string $price, string $fx_rate): string
-    {
-        $result = $this->multiply_decimals($quantity, $price);
-        $result = $this->multiply_decimals($result, $fx_rate);
-        return $this->round_decimal($result, 2);
-    }
-
     private function round_decimal(string $value, int $precision): string
     {
         return number_format((float) $value, $precision, '.', '');

@@ -6,14 +6,6 @@ ob_start();
 
 <h1>Instruments</h1>
 
-<form method="GET" action="?action=instruments" style="margin-bottom: 20px;">
-    <input type="text" name="q" value="<?= htmlspecialchars($q ?? '') ?>" placeholder="Search by name, ticker, or ISIN" style="width: 300px; padding: 5px;">
-    <button type="submit" style="padding: 5px 15px;">Search</button>
-    <?php if (!empty($q)): ?>
-        <a href="?action=instruments" style="margin-left: 10px;">Clear</a>
-    <?php endif; ?>
-</form>
-
 <p><a href="?action=instrument_new">Add instrument</a></p>
 
 <?php if (empty($instruments)): ?>

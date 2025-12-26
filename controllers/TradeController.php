@@ -219,5 +219,109 @@ class TradeController
             exit;
         }
     }
+
+    public function edit(int $id): void
+    {
+        $user_id = current_user_id();
+        if ($user_id === null) {
+            header('Location: ?action=login');
+            exit;
+        }
+
+        try {
+            $trade = $this->trade_service->get_trade($user_id, $id);
+        } catch (NotFoundException $e) {
+            header('Location: ?action=trades');
+            exit;
+        }
+
+        $errors = $_SESSION['form_errors'] ?? [];
+        $old_input = $_SESSION['old_input'] ?? [];
+        unset($_SESSION['form_errors'], $_SESSION['old_input']);
+
+        $instruments = $this->instrument_repo->search('', 200);
+        $broker_accounts = $this->broker_repo->list_by_user($user_id);
+
+        // Use old_input if available (from validation error), otherwise use trade
+        if (!empty($old_input)) {
+            $trade_data = (object) array_merge([
+                'id' => $id,
+                'broker_account_id' => $trade->broker_account_id,
+                'instrument_id' => $trade->instrument_id,
+                'trade_date' => $trade->trade_date,
+                'quantity' => $trade->quantity,
+                'price_per_unit' => $trade->price_per_unit,
+                'trade_currency' => $trade->trade_currency,
+                'fx_rate_to_eur' => $trade->fx_rate_to_eur,
+                'fee_eur' => $trade->fee_eur,
+                'notes' => $trade->notes,
+            ], $old_input);
+        } else {
+            $trade_data = (object) [
+                'id' => $id,
+                'broker_account_id' => $trade->broker_account_id,
+                'instrument_id' => $trade->instrument_id,
+                'trade_date' => $trade->trade_date,
+                'quantity' => $trade->quantity,
+                'price_per_unit' => $trade->price_per_unit,
+                'trade_currency' => $trade->trade_currency,
+                'fx_rate_to_eur' => $trade->fx_rate_to_eur,
+                'fee_eur' => $trade->fee_eur,
+                'notes' => $trade->notes,
+            ];
+        }
+
+        $trade_type = $trade->trade_type;
+        require __DIR__ . '/../views/trades/form_edit.php';
+    }
+
+    public function update_post(int $id): void
+    {
+        $user_id = current_user_id();
+        if ($user_id === null) {
+            header('Location: ?action=login');
+            exit;
+        }
+
+        $broker_account_id = $_POST['broker_account_id'] ?? '';
+        if ($broker_account_id === '') {
+            $broker_account_id = null;
+        } elseif ($broker_account_id !== null) {
+            $broker_account_id = (int) $broker_account_id;
+        }
+
+        $input = [
+            'broker_account_id' => $broker_account_id,
+            'instrument_id' => $_POST['instrument_id'] ?? '',
+            'trade_date' => $_POST['trade_date'] ?? '',
+            'quantity' => $_POST['quantity'] ?? '',
+            'price_per_unit' => $_POST['price_per_unit'] ?? '',
+            'trade_currency' => $_POST['trade_currency'] ?? '',
+            'fx_rate_to_eur' => $_POST['fx_rate_to_eur'] ?? '',
+            'fee_eur' => $_POST['fee_eur'] ?? '',
+            'notes' => $_POST['notes'] ?? '',
+        ];
+
+        try {
+            $trade = $this->trade_service->get_trade($user_id, $id);
+            
+            if ($trade->trade_type === 'BUY') {
+                $this->trade_service->update_buy($user_id, $id, $input);
+            } else {
+                $this->trade_service->update_sell($user_id, $id, $input);
+            }
+
+            header('Location: ?action=trades');
+            exit;
+        } catch (ValidationException $e) {
+            $_SESSION['form_errors'] = $e->errors;
+            $_SESSION['old_input'] = $input;
+            header('Location: ?action=trade_edit&id=' . $id);
+            exit;
+        } catch (NotFoundException $e) {
+            header('Location: ?action=trades');
+            exit;
+        }
+    }
 }
 

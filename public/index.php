@@ -121,6 +121,30 @@ switch ($action) {
         $controller->view_sell($id);
         break;
 
+    case 'trade_edit':
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=trades');
+            exit;
+        }
+        $controller = new TradeController();
+        $controller->edit($id);
+        break;
+
+    case 'trade_update':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=trades');
+            exit;
+        }
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=trades');
+            exit;
+        }
+        $controller = new TradeController();
+        $controller->update_post($id);
+        break;
+
     case 'dividends':
         require_once __DIR__ . '/../infrastructure/auth.php';
         require_auth();

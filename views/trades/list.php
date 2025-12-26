@@ -23,6 +23,7 @@ ob_start();
                 <th>Qty</th>
                 <th>Price</th>
                 <th>Currency</th>
+                <th>Price EUR</th>
                 <th>Total EUR</th>
                 <th>Fee EUR</th>
                 <th>Actions</th>
@@ -44,11 +45,13 @@ ob_start();
                     <td><?= htmlspecialchars($trade->quantity) ?></td>
                     <td><?= htmlspecialchars($trade->price_per_unit) ?></td>
                     <td><?= htmlspecialchars($trade->trade_currency) ?></td>
+                    <td><?= htmlspecialchars($trade->price_eur) ?></td>
                     <td><?= htmlspecialchars($trade->total_value_eur) ?></td>
                     <td><?= htmlspecialchars($trade->fee_eur) ?></td>
                     <td>
+                        <a href="?action=trade_edit&id=<?= $trade->id ?>">Edit</a>
                         <?php if ($trade->trade_type === 'SELL'): ?>
-                            <a href="?action=trade_view_sell&id=<?= $trade->id ?>">View</a>
+                            | <a href="?action=trade_view_sell&id=<?= $trade->id ?>">View</a>
                         <?php endif; ?>
                     </td>
                 </tr>

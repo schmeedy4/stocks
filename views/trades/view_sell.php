@@ -33,6 +33,10 @@ ob_start();
         <td><?= htmlspecialchars($trade->price_per_unit) ?> <?= htmlspecialchars($trade->trade_currency) ?></td>
     </tr>
     <tr>
+        <th style="text-align: left;">Price EUR</th>
+        <td><?= htmlspecialchars($trade->price_eur) ?> EUR</td>
+    </tr>
+    <tr>
         <th style="text-align: left;">Total Value EUR</th>
         <td><?= htmlspecialchars($trade->total_value_eur) ?> EUR</td>
     </tr>
@@ -103,6 +107,8 @@ ob_start();
         </tbody>
     </table>
 <?php endif; ?>
+
+<?php
 $content = ob_get_clean();
 require __DIR__ . '/../layout.php';
 ?>

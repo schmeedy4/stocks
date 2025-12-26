@@ -232,6 +232,7 @@ CREATE TABLE trade (
 
   CONSTRAINT chk_trade_qty_pos CHECK (quantity > 0),
   CONSTRAINT chk_trade_price_pos CHECK (price_per_unit >= 0),
+  CONSTRAINT chk_trade_price_eur_nonneg CHECK (price_eur >= 0),
   CONSTRAINT chk_trade_total_pos CHECK (total_value_eur >= 0),
   CONSTRAINT chk_trade_fee_nonneg CHECK (fee_eur >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

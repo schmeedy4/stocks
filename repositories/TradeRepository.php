@@ -15,7 +15,7 @@ class TradeRepository
     {
         $sql = '
             SELECT id, user_id, broker_account_id, instrument_id, trade_type, trade_date,
-                   quantity, price_per_unit, trade_currency, fee_amount, fee_currency,
+                   quantity, price_per_unit, price_eur, trade_currency, fee_amount, fee_currency,
                    fx_rate_to_eur, total_value_eur, fee_eur, notes
             FROM trade
             WHERE user_id = :user_id AND is_voided = 0
@@ -45,6 +45,7 @@ class TradeRepository
                 $row['trade_date'],
                 $row['quantity'],
                 $row['price_per_unit'],
+                $row['price_eur'],
                 $row['trade_currency'],
                 $row['fee_amount'],
                 $row['fee_currency'],
@@ -62,7 +63,7 @@ class TradeRepository
     {
         $stmt = $this->db->prepare('
             SELECT id, user_id, broker_account_id, instrument_id, trade_type, trade_date,
-                   quantity, price_per_unit, trade_currency, fee_amount, fee_currency,
+                   quantity, price_per_unit, price_eur, trade_currency, fee_amount, fee_currency,
                    fx_rate_to_eur, total_value_eur, fee_eur, notes
             FROM trade
             WHERE user_id = :user_id AND id = :trade_id
@@ -83,6 +84,7 @@ class TradeRepository
             $row['trade_date'],
             $row['quantity'],
             $row['price_per_unit'],
+            $row['price_eur'],
             $row['trade_currency'],
             $row['fee_amount'],
             $row['fee_currency'],
@@ -98,12 +100,12 @@ class TradeRepository
         $stmt = $this->db->prepare('
             INSERT INTO trade (
                 user_id, broker_account_id, instrument_id, trade_type, trade_date,
-                quantity, price_per_unit, trade_currency, fee_amount, fee_currency,
+                quantity, price_per_unit, price_eur, trade_currency, fee_amount, fee_currency,
                 fx_rate_to_eur, total_value_eur, fee_eur, notes
             )
             VALUES (
                 :user_id, :broker_account_id, :instrument_id, :trade_type, :trade_date,
-                :quantity, :price_per_unit, :trade_currency, :fee_amount, :fee_currency,
+                :quantity, :price_per_unit, :price_eur, :trade_currency, :fee_amount, :fee_currency,
                 :fx_rate_to_eur, :total_value_eur, :fee_eur, :notes
             )
         ');
@@ -115,6 +117,7 @@ class TradeRepository
             'trade_date' => $data['trade_date'],
             'quantity' => $data['quantity'],
             'price_per_unit' => $data['price_per_unit'],
+            'price_eur' => $data['price_eur'],
             'trade_currency' => $data['trade_currency'],
             'fee_amount' => $data['fee_amount'] ?? null,
             'fee_currency' => $data['fee_currency'] ?? null,
@@ -125,6 +128,44 @@ class TradeRepository
         ]);
 
         return (int) $this->db->lastInsertId();
+    }
+
+    public function update_trade(int $user_id, int $trade_id, array $data): void
+    {
+        $stmt = $this->db->prepare('
+            UPDATE trade
+            SET broker_account_id = :broker_account_id,
+                instrument_id = :instrument_id,
+                trade_date = :trade_date,
+                quantity = :quantity,
+                price_per_unit = :price_per_unit,
+                price_eur = :price_eur,
+                trade_currency = :trade_currency,
+                fee_amount = :fee_amount,
+                fee_currency = :fee_currency,
+                fx_rate_to_eur = :fx_rate_to_eur,
+                total_value_eur = :total_value_eur,
+                fee_eur = :fee_eur,
+                notes = :notes
+            WHERE user_id = :user_id AND id = :trade_id
+        ');
+        $stmt->execute([
+            'user_id' => $user_id,
+            'trade_id' => $trade_id,
+            'broker_account_id' => $data['broker_account_id'] ?? null,
+            'instrument_id' => $data['instrument_id'],
+            'trade_date' => $data['trade_date'],
+            'quantity' => $data['quantity'],
+            'price_per_unit' => $data['price_per_unit'],
+            'price_eur' => $data['price_eur'],
+            'trade_currency' => $data['trade_currency'],
+            'fee_amount' => $data['fee_amount'] ?? null,
+            'fee_currency' => $data['fee_currency'] ?? null,
+            'fx_rate_to_eur' => $data['fx_rate_to_eur'],
+            'total_value_eur' => $data['total_value_eur'],
+            'fee_eur' => $data['fee_eur'],
+            'notes' => $data['notes'] ?? null,
+        ]);
     }
 }
 

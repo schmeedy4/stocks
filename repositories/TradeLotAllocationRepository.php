@@ -69,5 +69,14 @@ class TradeLotAllocationRepository
 
         return $allocations;
     }
+
+    public function delete_by_sell_trade(int $user_id, int $sell_trade_id): void
+    {
+        $stmt = $this->db->prepare('
+            DELETE FROM trade_lot_allocation
+            WHERE user_id = :user_id AND sell_trade_id = :sell_trade_id
+        ');
+        $stmt->execute(['user_id' => $user_id, 'sell_trade_id' => $sell_trade_id]);
+    }
 }
 

@@ -13,6 +13,7 @@ class Trade
         public readonly string $trade_date,
         public readonly string $quantity,
         public readonly string $price_per_unit,
+        public readonly string $price_eur,
         public readonly string $trade_currency,
         public readonly ?string $fee_amount,
         public readonly ?string $fee_currency,
