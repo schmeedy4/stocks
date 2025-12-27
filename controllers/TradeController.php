@@ -239,10 +239,10 @@ class TradeController
         $broker_accounts = $this->broker_repo->list_by_user($user_id);
 
         // Use old_input if available (from validation error), otherwise use trade
-        // Convert fx_rate_to_eur to broker_fx_rate for display
+        // Convert fx_rate_to_eur to broker_fx_rate for display (round to 4 decimals for clean display)
         $broker_fx_rate = '';
         if ($trade->trade_currency !== 'EUR' && $trade->fx_rate_to_eur !== '' && $trade->fx_rate_to_eur !== '0') {
-            $broker_fx_rate = number_format(1 / (float)$trade->fx_rate_to_eur, 8, '.', '');
+            $broker_fx_rate = number_format(1 / (float)$trade->fx_rate_to_eur, 4, '.', '');
         }
         
         if (!empty($old_input)) {
@@ -258,9 +258,9 @@ class TradeController
                 'fee_eur' => $trade->fee_eur,
                 'notes' => $trade->notes,
             ], $old_input);
-            // If old_input doesn't have broker_fx_rate but has fx_rate_to_eur, convert it
+            // If old_input doesn't have broker_fx_rate but has fx_rate_to_eur, convert it (round to 4 decimals)
             if (!isset($trade_data->broker_fx_rate) && isset($trade_data->fx_rate_to_eur) && $trade_data->trade_currency !== 'EUR' && $trade_data->fx_rate_to_eur !== '' && $trade_data->fx_rate_to_eur !== '0') {
-                $trade_data->broker_fx_rate = number_format(1 / (float)$trade_data->fx_rate_to_eur, 8, '.', '');
+                $trade_data->broker_fx_rate = number_format(1 / (float)$trade_data->fx_rate_to_eur, 4, '.', '');
             }
         } else {
             $trade_data = (object) [

@@ -83,11 +83,13 @@ ob_start();
     $is_eur = ($trade_currency === 'EUR');
     if (!$is_eur):
         // Calculate broker_fx_rate from stored fx_rate_to_eur for display (if available)
+        // Round to 4 decimals for clean display
         $broker_fx_rate = '';
         if (isset($trade->fx_rate_to_eur) && $trade->fx_rate_to_eur !== '' && $trade->fx_rate_to_eur !== '0') {
-            $broker_fx_rate = number_format(1 / (float)$trade->fx_rate_to_eur, 8, '.', '');
+            $broker_fx_rate = number_format(1 / (float)$trade->fx_rate_to_eur, 4, '.', '');
         }
         if (isset($trade->broker_fx_rate)) {
+            // If already provided (e.g., from old_input), use as-is but ensure it's reasonable
             $broker_fx_rate = $trade->broker_fx_rate;
         }
     ?>

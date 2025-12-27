@@ -31,11 +31,12 @@ class TradeService
         }
 
         // Convert broker_fx_rate to fx_rate_to_eur
+        // Store with high precision (12 decimals) for accuracy
         $trade_currency = strtoupper(trim($input['trade_currency']));
-        $fx_rate_to_eur = '1.00000000';
+        $fx_rate_to_eur = '1.000000000000';
         if ($trade_currency !== 'EUR' && isset($input['broker_fx_rate']) && $input['broker_fx_rate'] !== '') {
             $fx_rate_to_eur = $this->divide_decimals('1', $input['broker_fx_rate']);
-            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 8);
+            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 12);
         }
 
         // Calculate price_eur = round(price_per_unit * fx_rate_to_eur, 8)
@@ -104,11 +105,12 @@ class TradeService
         }
 
         // Convert broker_fx_rate to fx_rate_to_eur
+        // Store with high precision (12 decimals) for accuracy
         $trade_currency = strtoupper(trim($input['trade_currency']));
-        $fx_rate_to_eur = '1.00000000';
+        $fx_rate_to_eur = '1.000000000000';
         if ($trade_currency !== 'EUR' && isset($input['broker_fx_rate']) && $input['broker_fx_rate'] !== '') {
             $fx_rate_to_eur = $this->divide_decimals('1', $input['broker_fx_rate']);
-            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 8);
+            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 12);
         }
 
         // Calculate price_eur = round(price_per_unit * fx_rate_to_eur, 8)
@@ -251,11 +253,12 @@ class TradeService
         }
 
         // Convert broker_fx_rate to fx_rate_to_eur
+        // Store with high precision (12 decimals) for accuracy
         $trade_currency = strtoupper(trim($input['trade_currency']));
-        $fx_rate_to_eur = '1.00000000';
+        $fx_rate_to_eur = '1.000000000000';
         if ($trade_currency !== 'EUR' && isset($input['broker_fx_rate']) && $input['broker_fx_rate'] !== '') {
             $fx_rate_to_eur = $this->divide_decimals('1', $input['broker_fx_rate']);
-            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 8);
+            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 12);
         }
 
         // Calculate price_eur = round(price_per_unit * fx_rate_to_eur, 8)
@@ -327,11 +330,12 @@ class TradeService
         
         // Check if quantity/price changed - if so, need to recalculate allocations
         // Convert broker_fx_rate to fx_rate_to_eur
+        // Store with high precision (12 decimals) for accuracy
         $trade_currency = strtoupper(trim($input['trade_currency']));
-        $fx_rate_to_eur = '1.00000000';
+        $fx_rate_to_eur = '1.000000000000';
         if ($trade_currency !== 'EUR' && isset($input['broker_fx_rate']) && $input['broker_fx_rate'] !== '') {
             $fx_rate_to_eur = $this->divide_decimals('1', $input['broker_fx_rate']);
-            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 8);
+            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 12);
         }
 
         $new_quantity = $this->round_decimal($input['quantity'], 6);
