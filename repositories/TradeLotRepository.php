@@ -51,6 +51,100 @@ class TradeLotRepository
         return $row['total'] ?? '0';
     }
 
+    /**
+     * Get available quantity for an instrument, filtered by broker_account_id (if provided).
+     * Only counts lots opened on or before trade_date (if provided).
+     * If broker_account_id is null, counts all lots (broker-independent).
+     */
+    public function get_available_quantity(int $user_id, int $instrument_id, ?int $broker_account_id = null, ?string $trade_date = null): string
+    {
+        $sql = '
+            SELECT COALESCE(SUM(tl.quantity_remaining), 0) as total
+            FROM trade_lot tl
+            INNER JOIN trade t ON tl.buy_trade_id = t.id
+            WHERE tl.user_id = :user_id 
+              AND tl.instrument_id = :instrument_id
+              AND t.trade_type = \'BUY\'
+        ';
+
+        $params = [
+            'user_id' => $user_id,
+            'instrument_id' => $instrument_id,
+        ];
+
+        // If broker_account_id is specified, filter by it (including NULL broker_account_id if provided value is special)
+        // If broker_account_id is null, show all lots regardless of broker
+        if ($broker_account_id !== null) {
+            $sql .= ' AND t.broker_account_id = :broker_account_id';
+            $params['broker_account_id'] = $broker_account_id;
+        }
+        // else: no filter on broker_account_id, show all
+
+        if ($trade_date !== null) {
+            $sql .= ' AND tl.opened_date <= :trade_date';
+            $params['trade_date'] = $trade_date;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+        return $row['total'] ?? '0';
+    }
+
+    /**
+     * Get list of instruments with available quantities, filtered by broker_account_id (if provided).
+     * Returns array of ['instrument_id' => int, 'available_qty' => string]
+     * If broker_account_id is null, includes all instruments regardless of broker.
+     */
+    public function get_instruments_with_availability(int $user_id, ?int $broker_account_id = null, ?string $trade_date = null, bool $include_zero = false): array
+    {
+        $sql = '
+            SELECT 
+                tl.instrument_id,
+                COALESCE(SUM(tl.quantity_remaining), 0) as available_qty
+            FROM trade_lot tl
+            INNER JOIN trade t ON tl.buy_trade_id = t.id
+            WHERE tl.user_id = :user_id 
+              AND t.trade_type = \'BUY\'
+        ';
+
+        $params = ['user_id' => $user_id];
+
+        // If broker_account_id is specified, filter by it
+        // If broker_account_id is null, show all lots regardless of broker
+        if ($broker_account_id !== null) {
+            $sql .= ' AND t.broker_account_id = :broker_account_id';
+            $params['broker_account_id'] = $broker_account_id;
+        }
+        // else: no filter on broker_account_id
+
+        if ($trade_date !== null) {
+            $sql .= ' AND tl.opened_date <= :trade_date';
+            $params['trade_date'] = $trade_date;
+        }
+
+        $sql .= ' GROUP BY tl.instrument_id';
+
+        if (!$include_zero) {
+            $sql .= ' HAVING available_qty > 0';
+        }
+
+        $sql .= ' ORDER BY tl.instrument_id';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[] = [
+                'instrument_id' => (int) $row['instrument_id'],
+                'available_qty' => $row['available_qty'],
+            ];
+        }
+
+        return $result;
+    }
+
     public function create_lot(int $user_id, array $data): int
     {
         $stmt = $this->db->prepare('

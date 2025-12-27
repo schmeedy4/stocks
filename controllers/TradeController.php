@@ -330,5 +330,80 @@ class TradeController
             exit;
         }
     }
+
+    /**
+     * JSON endpoint: Get available quantity for an instrument.
+     * GET /trades/sell/available?broker_account_id=..&instrument_id=..&trade_date=YYYY-MM-DD
+     * Returns: { "available_qty": "12.000000" }
+     */
+    public function get_available_quantity_json(): void
+    {
+        header('Content-Type: application/json');
+
+        $user_id = current_user_id();
+        if ($user_id === null) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
+
+        $instrument_id = isset($_GET['instrument_id']) ? (int) $_GET['instrument_id'] : 0;
+        if ($instrument_id <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid instrument_id']);
+            exit;
+        }
+
+        $broker_account_id = isset($_GET['broker_account_id']) && $_GET['broker_account_id'] !== '' 
+            ? (int) $_GET['broker_account_id'] 
+            : null;
+        
+        $trade_date = isset($_GET['trade_date']) && $_GET['trade_date'] !== '' 
+            ? $_GET['trade_date'] 
+            : null;
+
+        try {
+            $available_qty = $this->trade_service->get_available_quantity($user_id, $instrument_id, $broker_account_id, $trade_date);
+            echo json_encode(['available_qty' => $available_qty]);
+        } catch (\Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Internal server error']);
+        }
+    }
+
+    /**
+     * JSON endpoint: Get instruments list with availability for sell form.
+     * GET /trades/sell/instruments?broker_account_id=..&trade_date=YYYY-MM-DD&include_zero=0|1
+     * Returns: [{ "instrument_id": 1, "label": "AAPL - Apple Inc.", "available_qty": "12.000000" }, ...]
+     */
+    public function get_sell_instruments_json(): void
+    {
+        header('Content-Type: application/json');
+
+        $user_id = current_user_id();
+        if ($user_id === null) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
+
+        $broker_account_id = isset($_GET['broker_account_id']) && $_GET['broker_account_id'] !== '' 
+            ? (int) $_GET['broker_account_id'] 
+            : null;
+        
+        $trade_date = isset($_GET['trade_date']) && $_GET['trade_date'] !== '' 
+            ? $_GET['trade_date'] 
+            : null;
+
+        $include_zero = isset($_GET['include_zero']) && $_GET['include_zero'] === '1';
+
+        try {
+            $instruments = $this->trade_service->get_instruments_for_sell($user_id, $broker_account_id, $trade_date, $include_zero);
+            echo json_encode($instruments);
+        } catch (\Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Internal server error']);
+        }
+    }
 }
 

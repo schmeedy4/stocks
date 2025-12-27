@@ -239,6 +239,46 @@ class TradeService
         return $trade;
     }
 
+    /**
+     * Get available quantity for an instrument, filtered by broker_account_id (if provided).
+     * Returns quantity as string with 6 decimal precision.
+     */
+    public function get_available_quantity(int $user_id, int $instrument_id, ?int $broker_account_id = null, ?string $trade_date = null): string
+    {
+        $qty = $this->lot_repo->get_available_quantity($user_id, $instrument_id, $broker_account_id, $trade_date);
+        // Ensure 6 decimal precision
+        return $this->round_decimal($qty, 6);
+    }
+
+    /**
+     * Get list of instruments with availability for sell form.
+     * Returns array of ['instrument_id' => int, 'label' => string, 'available_qty' => string]
+     */
+    public function get_instruments_for_sell(int $user_id, ?int $broker_account_id = null, ?string $trade_date = null, bool $include_zero = false): array
+    {
+        $instruments_with_qty = $this->lot_repo->get_instruments_with_availability($user_id, $broker_account_id, $trade_date, $include_zero);
+
+        $result = [];
+        foreach ($instruments_with_qty as $item) {
+            $instrument = $this->instrument_repo->find_by_id($item['instrument_id']);
+            if ($instrument === null) {
+                continue; // Skip if instrument not found
+            }
+
+            $label = $instrument->ticker 
+                ? $instrument->ticker . ' - ' . $instrument->name 
+                : $instrument->name;
+
+            $result[] = [
+                'instrument_id' => $item['instrument_id'],
+                'label' => $label,
+                'available_qty' => $this->round_decimal($item['available_qty'], 6),
+            ];
+        }
+
+        return $result;
+    }
+
     public function update_buy(int $user_id, int $trade_id, array $input): void
     {
         $errors = $this->validate($input);

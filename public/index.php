@@ -145,6 +145,16 @@ switch ($action) {
         $controller->update_post($id);
         break;
 
+    case 'trades_sell_available':
+        $controller = new TradeController();
+        $controller->get_available_quantity_json();
+        break;
+
+    case 'trades_sell_instruments':
+        $controller = new TradeController();
+        $controller->get_sell_instruments_json();
+        break;
+
     case 'payers':
         $controller = new DividendPayerController();
         $controller->list();

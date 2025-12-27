@@ -55,8 +55,16 @@ ob_start();
     </div>
 
     <div style="margin-bottom: 15px;">
+        <label>
+            <input type="checkbox" id="show_closed_positions" style="margin-right: 5px;">
+            Show closed positions
+        </label>
+    </div>
+
+    <div style="margin-bottom: 15px;">
         <label for="quantity">Quantity <span style="color: red;">*</span>:</label><br>
-        <input type="number" id="quantity" name="quantity" value="<?= htmlspecialchars($trade->quantity ?? '') ?>" step="any" required style="width: 400px; padding: 5px;">
+        <input type="number" id="quantity" name="quantity" value="<?= htmlspecialchars($trade->quantity ?? '') ?>" step="0.000001" required style="width: 400px; padding: 5px;">
+        <div id="available_qty_display" style="font-size: 0.9em; color: #666; margin-top: 5px;"></div>
         <?php if (isset($errors['quantity'])): ?>
             <span style="color: red;"><?= htmlspecialchars($errors['quantity']) ?></span>
         <?php endif; ?>
@@ -120,6 +128,179 @@ ob_start();
         <a href="?action=trades" style="margin-left: 10px;">Cancel</a>
     </div>
 </form>
+
+<script>
+(function() {
+    'use strict';
+
+    // Elements
+    const brokerSelect = document.getElementById('broker_account_id');
+    const tradeDateInput = document.getElementById('trade_date');
+    const showClosedCheckbox = document.getElementById('show_closed_positions');
+    const instrumentSelect = document.getElementById('instrument_id');
+    const quantityInput = document.getElementById('quantity');
+    const priceInput = document.getElementById('price_per_unit');
+    const availableQtyDisplay = document.getElementById('available_qty_display');
+
+    let currentAvailableQty = '0';
+
+    // Format quantity to 6 decimals
+    function format_qty(qty_str) {
+        const num = parseFloat(qty_str);
+        if (isNaN(num)) return '0.000000';
+        return num.toFixed(6);
+    }
+
+    // Fetch instruments list and rebuild dropdown
+    async function update_instruments_list() {
+        const brokerId = brokerSelect.value || null;
+        const tradeDate = tradeDateInput.value || '';
+        const includeZero = showClosedCheckbox.checked;
+
+        let url = '?action=trades_sell_instruments';
+        const params = new URLSearchParams();
+        if (brokerId) params.append('broker_account_id', brokerId);
+        if (tradeDate) params.append('trade_date', tradeDate);
+        if (includeZero) params.append('include_zero', '1');
+        if (params.toString()) url += '&' + params.toString();
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to fetch instruments');
+            const instruments = await response.json();
+
+            // Save current selection
+            const currentInstrumentId = instrumentSelect.value;
+
+            // Clear and rebuild dropdown
+            instrumentSelect.innerHTML = '<option value="">-- Select Instrument --</option>';
+            instruments.forEach(function(instr) {
+                const option = document.createElement('option');
+                option.value = instr.instrument_id;
+                option.textContent = instr.label;
+                instrumentSelect.appendChild(option);
+            });
+
+            // Try to restore selection, or select first available
+            if (currentInstrumentId) {
+                const option = instrumentSelect.querySelector('option[value="' + currentInstrumentId + '"]');
+                if (option) {
+                    instrumentSelect.value = currentInstrumentId;
+                } else if (instruments.length > 0) {
+                    // Current selection not available, select first
+                    instrumentSelect.value = instruments[0].instrument_id.toString();
+                } else {
+                    instrumentSelect.value = '';
+                }
+            } else if (instruments.length > 0) {
+                instrumentSelect.value = instruments[0].instrument_id.toString();
+            }
+
+            // Update availability for selected instrument
+            update_available_quantity();
+        } catch (error) {
+            console.error('Error fetching instruments:', error);
+            // Fallback: keep existing dropdown, server validation will handle errors
+        }
+    }
+
+    // Fetch available quantity for selected instrument
+    async function update_available_quantity() {
+        const instrumentId = instrumentSelect.value;
+        if (!instrumentId) {
+            currentAvailableQty = '0';
+            update_quantity_input_state('0');
+            return;
+        }
+
+        const brokerId = brokerSelect.value || null;
+        const tradeDate = tradeDateInput.value || '';
+
+        let url = '?action=trades_sell_available';
+        const params = new URLSearchParams();
+        params.append('instrument_id', instrumentId);
+        if (brokerId) params.append('broker_account_id', brokerId);
+        if (tradeDate) params.append('trade_date', tradeDate);
+        url += '&' + params.toString();
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to fetch available quantity');
+            const data = await response.json();
+            currentAvailableQty = format_qty(data.available_qty);
+            update_quantity_input_state(currentAvailableQty);
+        } catch (error) {
+            console.error('Error fetching available quantity:', error);
+            // Fallback: keep current state, server validation will handle errors
+        }
+    }
+
+    // Update quantity input max, clamp if needed, update display
+    function update_quantity_input_state(available_qty_str) {
+        const availableQty = parseFloat(available_qty_str);
+        const isAvailable = !isNaN(availableQty) && availableQty > 0;
+
+        if (isAvailable) {
+            // Set max attribute (use step precision: 0.000001)
+            quantityInput.max = format_qty(available_qty_str);
+            quantityInput.disabled = false;
+            priceInput.disabled = false;
+
+            // Update display
+            availableQtyDisplay.textContent = 'Available: ' + format_qty(available_qty_str);
+            availableQtyDisplay.style.color = '#666';
+
+            // Clamp current value if it exceeds available
+            const currentValue = parseFloat(quantityInput.value);
+            if (!isNaN(currentValue) && currentValue > availableQty) {
+                quantityInput.value = format_qty(available_qty_str);
+            }
+        } else {
+            // No shares available
+            quantityInput.max = '';
+            quantityInput.value = '';
+            quantityInput.disabled = true;
+            priceInput.disabled = true;
+            availableQtyDisplay.textContent = 'No shares available';
+            availableQtyDisplay.style.color = '#d32f2f';
+        }
+    }
+
+    // Event listeners
+    brokerSelect.addEventListener('change', function() {
+        update_instruments_list();
+    });
+
+    tradeDateInput.addEventListener('change', function() {
+        update_instruments_list();
+    });
+
+    showClosedCheckbox.addEventListener('change', function() {
+        update_instruments_list();
+    });
+
+    instrumentSelect.addEventListener('change', function() {
+        update_available_quantity();
+    });
+
+    quantityInput.addEventListener('input', function() {
+        const value = parseFloat(quantityInput.value);
+        const max = parseFloat(quantityInput.max);
+        if (!isNaN(value) && !isNaN(max) && value > max) {
+            quantityInput.value = format_qty(max.toString());
+        }
+    });
+
+    // Initialize: set default trade_date to today if empty
+    if (!tradeDateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        tradeDateInput.value = today;
+    }
+
+    // Initial load
+    update_instruments_list();
+})();
+</script>
 
 <?php
 $content = ob_get_clean();
