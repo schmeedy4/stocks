@@ -67,6 +67,37 @@ class DashboardController
             }
         }
 
+        // Calculate year summary
+        $sum_proceeds_eur = '0.00';
+        $tax_before_losses_eur = '0.00';
+        $sum_negative_pnl_eur = '0.00';
+        
+        foreach ($sell_tax_totals as $tax_totals) {
+            // Sum proceeds
+            $proceeds = $tax_totals['total_sell_proceeds_eur'] ?? '0.00';
+            $sum_proceeds_eur = bcadd($sum_proceeds_eur, $proceeds, 2);
+            
+            // Sum tax (tax before losses)
+            $tax = $tax_totals['total_tax_eur'] ?? '0.00';
+            $tax_before_losses_eur = bcadd($tax_before_losses_eur, $tax, 2);
+            
+            // Sum negative P/L (losses only) - these are already negative values
+            $gain = $tax_totals['total_gain_eur'] ?? '0.00';
+            if (bccomp($gain, '0.00', 2) < 0) {
+                // Negative gain = loss, sum the negative values
+                $sum_negative_pnl_eur = bcadd($sum_negative_pnl_eur, $gain, 2);
+            }
+        }
+        
+        // Total losses offset (absolute value of sum of negative P/L)
+        $total_losses_offset_eur = bcsub('0.00', $sum_negative_pnl_eur, 2); // Convert negative to positive
+        
+        // Calculate final tax: max(0, tax_before_losses - loss_offset)
+        $final_tax_eur = bcsub($tax_before_losses_eur, $total_losses_offset_eur, 2);
+        if (bccomp($final_tax_eur, '0.00', 2) < 0) {
+            $final_tax_eur = '0.00';
+        }
+
         require __DIR__ . '/../views/dashboard.php';
     }
 }

@@ -26,6 +26,32 @@ ob_start();
 <?php if (empty($sell_trades)): ?>
     <p>No SELL trades found for <?= htmlspecialchars((string)$selected_year) ?>.</p>
 <?php else: ?>
+    <h2>Year Summary</h2>
+    <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tbody>
+            <tr>
+                <td style="font-weight: bold; width: 250px;">Total Proceeds (EUR):</td>
+                <td><?= htmlspecialchars($sum_proceeds_eur) ?></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold;">Tax before losses (EUR):</td>
+                <td><?= htmlspecialchars($tax_before_losses_eur) ?></td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold;">Total Losses Offset (EUR):</td>
+                <td><?= htmlspecialchars($total_losses_offset_eur) ?></td>
+            </tr>
+            <tr style="border-top: 2px solid #333;">
+                <td style="font-weight: bold;">Final Tax (EUR):</td>
+                <td><?= htmlspecialchars($final_tax_eur) ?></td>
+            </tr>
+        </tbody>
+    </table>
+
     <h2>SELL Trades for <?= htmlspecialchars((string)$selected_year) ?></h2>
     <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse;">
         <thead>
