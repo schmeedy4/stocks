@@ -64,6 +64,12 @@ ob_start();
     <div style="margin-bottom: 15px;">
         <label for="default_dividend_type_code">Default Dividend Type Code:</label><br>
         <input type="text" id="default_dividend_type_code" name="default_dividend_type_code" value="<?= htmlspecialchars($payer_data->default_dividend_type_code ?? '') ?>" style="width: 400px; padding: 5px;">
+        <div style="font-size: 0.9em; color: #666; margin-top: 5px; line-height: 1.4;">
+            Common FURS codes:<br>
+            - DIV = regular cash dividend from shares (most stocks &amp; ETFs, quarterly or annual)<br>
+            - DIV_POS = profit participation (not typical public-company dividends)<br>
+            - DRUGO = other capital income (use only for special cases)
+        </div>
     </div>
 
     <?php if ($is_edit): ?>
