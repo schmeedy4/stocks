@@ -14,7 +14,7 @@ class InstrumentRepository
     public function search(string $q = '', int $limit = 200): array
     {
         $sql = '
-            SELECT id, isin, ticker, name, instrument_type, country_code, trading_currency
+            SELECT id, isin, ticker, name, instrument_type, country_code, trading_currency, dividend_payer_id
             FROM instrument
         ';
 
@@ -46,7 +46,8 @@ class InstrumentRepository
                 $row['name'],
                 $row['instrument_type'],
                 $row['country_code'],
-                $row['trading_currency']
+                $row['trading_currency'],
+                $row['dividend_payer_id'] ? (int) $row['dividend_payer_id'] : null
             );
         }
 
@@ -56,7 +57,7 @@ class InstrumentRepository
     public function find_by_id(int $id): ?Instrument
     {
         $stmt = $this->db->prepare('
-            SELECT id, isin, ticker, name, instrument_type, country_code, trading_currency
+            SELECT id, isin, ticker, name, instrument_type, country_code, trading_currency, dividend_payer_id
             FROM instrument
             WHERE id = :id
         ');
@@ -74,15 +75,16 @@ class InstrumentRepository
             $row['name'],
             $row['instrument_type'],
             $row['country_code'],
-            $row['trading_currency']
+            $row['trading_currency'],
+            $row['dividend_payer_id'] ? (int) $row['dividend_payer_id'] : null
         );
     }
 
     public function create(array $data): int
     {
         $stmt = $this->db->prepare('
-            INSERT INTO instrument (isin, ticker, name, instrument_type, country_code, trading_currency)
-            VALUES (:isin, :ticker, :name, :instrument_type, :country_code, :trading_currency)
+            INSERT INTO instrument (isin, ticker, name, instrument_type, country_code, trading_currency, dividend_payer_id)
+            VALUES (:isin, :ticker, :name, :instrument_type, :country_code, :trading_currency, :dividend_payer_id)
         ');
         $stmt->execute([
             'isin' => $data['isin'] ?? null,
@@ -91,6 +93,7 @@ class InstrumentRepository
             'instrument_type' => $data['instrument_type'],
             'country_code' => $data['country_code'] ?? null,
             'trading_currency' => $data['trading_currency'] ?? null,
+            'dividend_payer_id' => $data['dividend_payer_id'] ?? null,
         ]);
 
         return (int) $this->db->lastInsertId();
@@ -105,7 +108,8 @@ class InstrumentRepository
                 name = :name,
                 instrument_type = :instrument_type,
                 country_code = :country_code,
-                trading_currency = :trading_currency
+                trading_currency = :trading_currency,
+                dividend_payer_id = :dividend_payer_id
             WHERE id = :id
         ');
         $stmt->execute([
@@ -116,6 +120,7 @@ class InstrumentRepository
             'instrument_type' => $data['instrument_type'],
             'country_code' => $data['country_code'] ?? null,
             'trading_currency' => $data['trading_currency'] ?? null,
+            'dividend_payer_id' => $data['dividend_payer_id'] ?? null,
         ]);
     }
 }

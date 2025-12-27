@@ -5,10 +5,12 @@ declare(strict_types=1);
 class InstrumentService
 {
     private InstrumentRepository $instrument_repo;
+    private DividendPayerRepository $payer_repo;
 
     public function __construct()
     {
         $this->instrument_repo = new InstrumentRepository();
+        $this->payer_repo = new DividendPayerRepository();
     }
 
     public function list(string $q): array
@@ -25,9 +27,9 @@ class InstrumentService
         return $instrument;
     }
 
-    public function create(array $input): int
+    public function create(array $input, int $user_id): int
     {
-        $errors = $this->validate($input);
+        $errors = $this->validate($input, $user_id);
 
         if (!empty($errors)) {
             throw new ValidationException('Validation failed', $errors);
@@ -54,12 +56,16 @@ class InstrumentService
             $data['trading_currency'] = strtoupper(trim($input['trading_currency']));
         }
 
+        if (isset($input['dividend_payer_id']) && $input['dividend_payer_id'] !== '') {
+            $data['dividend_payer_id'] = (int) $input['dividend_payer_id'];
+        }
+
         return $this->instrument_repo->create($data);
     }
 
-    public function update(int $id, array $input): void
+    public function update(int $id, array $input, int $user_id): void
     {
-        $errors = $this->validate($input);
+        $errors = $this->validate($input, $user_id);
 
         if (!empty($errors)) {
             throw new ValidationException('Validation failed', $errors);
@@ -91,10 +97,16 @@ class InstrumentService
             $data['trading_currency'] = strtoupper(trim($input['trading_currency']));
         }
 
+        if (isset($input['dividend_payer_id']) && $input['dividend_payer_id'] !== '') {
+            $data['dividend_payer_id'] = (int) $input['dividend_payer_id'];
+        } else {
+            $data['dividend_payer_id'] = null;
+        }
+
         $this->instrument_repo->update($id, $data);
     }
 
-    private function validate(array $input): array
+    private function validate(array $input, int $user_id): array
     {
         $errors = [];
 
@@ -148,6 +160,15 @@ class InstrumentService
                 $errors['country_code'] = 'Country code must be exactly 2 characters';
             } elseif (!preg_match('/^[A-Z]+$/', strtoupper($country))) {
                 $errors['country_code'] = 'Country code must contain only letters';
+            }
+        }
+
+        // dividend_payer_id: optional, but if provided must belong to user
+        if (isset($input['dividend_payer_id']) && $input['dividend_payer_id'] !== '') {
+            $payer_id = (int) $input['dividend_payer_id'];
+            $payer = $this->payer_repo->find_by_id($user_id, $payer_id);
+            if ($payer === null) {
+                $errors['dividend_payer_id'] = 'Dividend payer not found or does not belong to you';
             }
         }
 

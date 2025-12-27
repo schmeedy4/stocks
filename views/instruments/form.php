@@ -1,5 +1,6 @@
 <?php
 
+$instrument = $instrument_data ?? null;
 $is_edit = isset($instrument) && isset($instrument->id);
 $page_title = $is_edit ? 'Edit Instrument' : 'New Instrument';
 ob_start();
@@ -70,6 +71,21 @@ ob_start();
         <input type="text" id="trading_currency" name="trading_currency" value="<?= htmlspecialchars($instrument->trading_currency ?? '') ?>" maxlength="3" style="width: 400px; padding: 5px;">
         <?php if (isset($errors['trading_currency'])): ?>
             <span style="color: red;"><?= htmlspecialchars($errors['trading_currency']) ?></span>
+        <?php endif; ?>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+        <label for="dividend_payer_id">Default Dividend Payer:</label><br>
+        <select id="dividend_payer_id" name="dividend_payer_id" style="width: 400px; padding: 5px;">
+            <option value="">(None)</option>
+            <?php foreach ($payers ?? [] as $payer): ?>
+                <option value="<?= $payer->id ?>" <?= ($instrument->dividend_payer_id ?? null) === $payer->id ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($payer->payer_name) ?> (<?= htmlspecialchars($payer->payer_country_code) ?>)
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <?php if (isset($errors['dividend_payer_id'])): ?>
+            <span style="color: red;"><?= htmlspecialchars($errors['dividend_payer_id']) ?></span>
         <?php endif; ?>
     </div>
 

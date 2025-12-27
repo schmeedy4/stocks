@@ -32,8 +32,9 @@
             <a href="?action=dashboard">Dashboard</a> |
             <a href="?action=instruments">Instruments</a> |
             <a href="?action=trades">Trades</a> |
-            <a href="?action=dividends">Dividends</a> |
             <a href="?action=corporate_actions">Corporate Actions</a> |
+            <a href="?action=payers">Payers</a> |
+            <a href="?action=dividends">Dividends</a> |
             <a href="?action=logout">Logout</a>
         </nav>
         <hr>

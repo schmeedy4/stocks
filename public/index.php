@@ -145,10 +145,104 @@ switch ($action) {
         $controller->update_post($id);
         break;
 
+    case 'payers':
+        $controller = new DividendPayerController();
+        $controller->list();
+        break;
+
+    case 'payer_new':
+        $controller = new DividendPayerController();
+        $controller->new();
+        break;
+
+    case 'payer_create':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=payers');
+            exit;
+        }
+        $controller = new DividendPayerController();
+        $controller->create_post();
+        break;
+
+    case 'payer_edit':
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=payers');
+            exit;
+        }
+        $controller = new DividendPayerController();
+        $controller->edit($id);
+        break;
+
+    case 'payer_update':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=payers');
+            exit;
+        }
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=payers');
+            exit;
+        }
+        $controller = new DividendPayerController();
+        $controller->update_post($id);
+        break;
+
     case 'dividends':
-        require_once __DIR__ . '/../infrastructure/auth.php';
-        require_auth();
-        require __DIR__ . '/../views/dividends/list.php';
+        $controller = new DividendController();
+        $controller->list();
+        break;
+
+    case 'dividend_new':
+        $controller = new DividendController();
+        $controller->new();
+        break;
+
+    case 'dividend_create':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=dividends');
+            exit;
+        }
+        $controller = new DividendController();
+        $controller->create_post();
+        break;
+
+    case 'dividend_edit':
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=dividends');
+            exit;
+        }
+        $controller = new DividendController();
+        $controller->edit($id);
+        break;
+
+    case 'dividend_update':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=dividends');
+            exit;
+        }
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=dividends');
+            exit;
+        }
+        $controller = new DividendController();
+        $controller->update_post($id);
+        break;
+
+    case 'dividend_void':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=dividends');
+            exit;
+        }
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=dividends');
+            exit;
+        }
+        $controller = new DividendController();
+        $controller->void_post($id);
         break;
 
     case 'corporate_actions':

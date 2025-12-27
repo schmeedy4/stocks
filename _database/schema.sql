@@ -72,28 +72,7 @@ CREATE TABLE broker_account (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
--- 4) instrument (GLOBAL catalog)
--- Keep global so multiple users share the same ISIN/ticker rows.
--- -----------------------------
-CREATE TABLE instrument (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-  isin VARCHAR(16) NULL,                         -- US0378331005
-  ticker VARCHAR(32) NULL,                       -- AAPL
-  name VARCHAR(255) NOT NULL,
-  instrument_type ENUM('STOCK','ETF','ADR','BOND','OTHER') NOT NULL DEFAULT 'STOCK',
-  country_code CHAR(2) NULL,
-  trading_currency CHAR(3) NULL,
-
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-  UNIQUE KEY uk_instrument_isin (isin),
-  KEY idx_instrument_ticker (ticker)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- -----------------------------
--- 5) dividend_payer (per user, because address/name formatting differs)
+-- 4) dividend_payer (per user, because address/name formatting differs)
 -- -----------------------------
 CREATE TABLE dividend_payer (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -122,6 +101,30 @@ CREATE TABLE dividend_payer (
   CONSTRAINT fk_payer_user FOREIGN KEY (user_id) REFERENCES user(id),
   CONSTRAINT fk_payer_created_by FOREIGN KEY (created_by) REFERENCES user(id),
   CONSTRAINT fk_payer_updated_by FOREIGN KEY (updated_by) REFERENCES user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- 5) instrument (GLOBAL catalog)
+-- Keep global so multiple users share the same ISIN/ticker rows.
+-- -----------------------------
+CREATE TABLE instrument (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+  isin VARCHAR(16) NULL,                         -- US0378331005
+  ticker VARCHAR(32) NULL,                       -- AAPL
+  name VARCHAR(255) NOT NULL,
+  instrument_type ENUM('STOCK','ETF','ADR','BOND','OTHER') NOT NULL DEFAULT 'STOCK',
+  country_code CHAR(2) NULL,
+  trading_currency CHAR(3) NULL,
+  dividend_payer_id BIGINT UNSIGNED NULL,
+
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  UNIQUE KEY uk_instrument_isin (isin),
+  KEY idx_instrument_ticker (ticker),
+  
+  CONSTRAINT fk_instrument_dividend_payer FOREIGN KEY (dividend_payer_id) REFERENCES dividend_payer(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
