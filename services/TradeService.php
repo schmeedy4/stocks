@@ -22,6 +22,14 @@ class TradeService
         return $this->trade_repo->list_by_user($user_id, $filters);
     }
 
+    /**
+     * Get minimum year from all trades for the user.
+     */
+    public function get_min_year(int $user_id): ?int
+    {
+        return $this->trade_repo->get_min_year($user_id);
+    }
+
     public function create_buy(int $user_id, array $input): int
     {
         $errors = $this->validate($input);
@@ -189,7 +197,7 @@ class TradeService
             $realized_pnl_eur = $this->subtract_decimals($proceeds_part_eur, $cost_basis_part_eur);
             $realized_pnl_eur = $this->round_decimal($realized_pnl_eur, 2);
 
-            // Create allocation
+            // Create allocation (tax fields computed at read-time)
             $allocation_data = [
                 'sell_trade_id' => $sell_trade_id,
                 'trade_lot_id' => $lot->id,
@@ -237,6 +245,130 @@ class TradeService
             throw new NotFoundException('Trade not found');
         }
         return $trade;
+    }
+
+    /**
+     * Get tax totals for a SELL trade by computing tax from allocations at read-time.
+     * Joins with trade_lot (buy_date) and trade (sell_date) to compute tax per allocation.
+     * Returns array with totals or null if trade is not a SELL or has no allocations.
+     * 
+     * @return array|null {
+     *   'total_buy_cost_eur': string,
+     *   'total_sell_proceeds_eur': string,
+     *   'total_gain_eur': string,
+     *   'total_normirani_stroski_eur': string,
+     *   'total_tax_base_eur': string,
+     *   'total_tax_eur': string,
+     *   'tax_rate_percent': string|null (or 'mixed' if multiple rates),
+     *   'tax_rate_min': string|null,
+     *   'tax_rate_max': string|null
+     * }
+     */
+    public function get_sell_tax_totals(int $user_id, int $sell_trade_id): ?array
+    {
+        $trade = $this->trade_repo->find_by_id($user_id, $sell_trade_id);
+        if ($trade === null || $trade->trade_type !== 'SELL') {
+            return null;
+        }
+
+        $allocations_data = $this->allocation_repo->list_by_sell_trade($user_id, $sell_trade_id);
+        if (empty($allocations_data)) {
+            return null;
+        }
+
+        // Extract sell_date and year from trade
+        $sell_date = new \DateTimeImmutable($trade->trade_date);
+        $sell_year = (int) $sell_date->format('Y');
+
+        $total_buy_cost = '0.00';
+        $total_sell_proceeds = '0.00';
+        $total_gain = '0.00';
+        $total_normirani_stroski = '0.00';
+        $total_tax_base = '0.00';
+        $total_tax = '0.00';
+        
+        $tax_rates = [];
+        
+        foreach ($allocations_data as $alloc_data) {
+            $alloc = $alloc_data['allocation'];
+            $buy_date = new \DateTimeImmutable($alloc_data['lot_opened_date']);
+            
+            // Sum basic fields
+            $total_buy_cost = $this->add_decimals($total_buy_cost, $alloc->cost_basis_eur);
+            $total_sell_proceeds = $this->add_decimals($total_sell_proceeds, $alloc->proceeds_eur);
+            $total_gain = $this->add_decimals($total_gain, $alloc->realized_pnl_eur);
+            
+            // Compute tax fields at read-time
+            // gain = proceeds_eur - cost_basis_eur (already computed as realized_pnl_eur)
+            $gain_eur = $alloc->realized_pnl_eur;
+            
+            // norm = min(0.01*cost_basis_eur + 0.01*proceeds_eur, max(0, gain))
+            $normirani_stroski_eur = $this->compute_normirani_stroski(
+                $alloc->cost_basis_eur, 
+                $alloc->proceeds_eur, 
+                $gain_eur
+            );
+            
+            // tax_base = max(0, gain - norm)
+            $tax_base_eur = $this->subtract_decimals($gain_eur, $normirani_stroski_eur);
+            if ($this->compare_decimals($tax_base_eur, '0') < 0) {
+                $tax_base_eur = '0.00';
+            } else {
+                $tax_base_eur = $this->round_decimal($tax_base_eur, 2);
+            }
+            
+            // holding_years = full years between buy_date and sell_date
+            $holding_years = $buy_date->diff($sell_date)->y;
+            
+            // rate = get_slovenia_tax_rate(sell_year, holding_years)
+            $tax_rate_percent = $this->get_slovenia_tax_rate($sell_year, $holding_years);
+            
+            // tax = tax_base * rate
+            $tax_eur = $this->multiply_decimals($tax_base_eur, (string)($tax_rate_percent / 100));
+            $tax_eur = $this->round_decimal($tax_eur, 2);
+            
+            // Sum computed tax fields
+            $total_normirani_stroski = $this->add_decimals($total_normirani_stroski, $normirani_stroski_eur);
+            $total_tax_base = $this->add_decimals($total_tax_base, $tax_base_eur);
+            $total_tax = $this->add_decimals($total_tax, $tax_eur);
+            $tax_rates[] = (string)$tax_rate_percent;
+        }
+        
+        // Round totals
+        $total_buy_cost = $this->round_decimal($total_buy_cost, 2);
+        $total_sell_proceeds = $this->round_decimal($total_sell_proceeds, 2);
+        $total_gain = $this->round_decimal($total_gain, 2);
+        $total_normirani_stroski = $this->round_decimal($total_normirani_stroski, 2);
+        $total_tax_base = $this->round_decimal($total_tax_base, 2);
+        $total_tax = $this->round_decimal($total_tax, 2);
+        
+        // Determine tax rate display
+        $tax_rate_percent_display = null;
+        $tax_rate_min = null;
+        $tax_rate_max = null;
+        
+        if (!empty($tax_rates)) {
+            $unique_rates = array_unique($tax_rates);
+            if (count($unique_rates) === 1) {
+                $tax_rate_percent_display = (string)reset($unique_rates);
+            } else {
+                $tax_rate_percent_display = 'mixed';
+                $tax_rate_min = (string)min($unique_rates);
+                $tax_rate_max = (string)max($unique_rates);
+            }
+        }
+        
+        return [
+            'total_buy_cost_eur' => $total_buy_cost,
+            'total_sell_proceeds_eur' => $total_sell_proceeds,
+            'total_gain_eur' => $total_gain,
+            'total_normirani_stroski_eur' => $total_normirani_stroski,
+            'total_tax_base_eur' => $total_tax_base,
+            'total_tax_eur' => $total_tax,
+            'tax_rate_percent' => $tax_rate_percent_display,
+            'tax_rate_min' => $tax_rate_min,
+            'tax_rate_max' => $tax_rate_max,
+        ];
     }
 
     /**
@@ -427,7 +559,7 @@ class TradeService
             // Delete existing allocations
             $this->allocation_repo->delete_by_sell_trade($user_id, $trade_id);
 
-            // Recreate allocations with new values
+            // Recreate allocations with new values (tax fields computed at read-time)
             $sell_proceeds_net_eur = $this->subtract_decimals($total_value_eur, $fee_eur);
             $lots = $this->lot_repo->list_open_lots_fifo($user_id, $instrument_id);
             
@@ -452,6 +584,7 @@ class TradeService
                 $realized_pnl_eur = $this->subtract_decimals($proceeds_part_eur, $cost_basis_part_eur);
                 $realized_pnl_eur = $this->round_decimal($realized_pnl_eur, 2);
 
+                // Create allocation (tax fields computed at read-time)
                 $allocation_data = [
                     'sell_trade_id' => $trade_id,
                     'trade_lot_id' => $lot->id,
@@ -551,6 +684,64 @@ class TradeService
         }
 
         return $errors;
+    }
+
+    /**
+     * Get Slovenian capital gains tax rate based on sell year and holding period.
+     * 
+     * Rate mapping:
+     * A) sell_year <= 2019: <5:25; >=5:15; >=10:10; >=15:5; >=20:0
+     * B) sell_year 2020-2021: <5:27.5; >=5:20; >=10:15; >=15:10; >=20:0
+     * C) sell_year >= 2022: <5:25; >=5:20; >=10:15; >=15:0; >=20:0
+     * 
+     * @param int $sell_year Year when the sell occurred
+     * @param int $holding_years Full years between buy and sell dates
+     * @return float Tax rate as percentage (e.g., 25.0 for 25%)
+     */
+    public function get_slovenia_tax_rate(int $sell_year, int $holding_years): float
+    {
+        if ($sell_year <= 2019) {
+            if ($holding_years >= 20) return 0.0;
+            if ($holding_years >= 15) return 5.0;
+            if ($holding_years >= 10) return 10.0;
+            if ($holding_years >= 5) return 15.0;
+            return 25.0;
+        } elseif ($sell_year >= 2020 && $sell_year <= 2021) {
+            if ($holding_years >= 20) return 0.0;
+            if ($holding_years >= 15) return 10.0;
+            if ($holding_years >= 10) return 15.0;
+            if ($holding_years >= 5) return 20.0;
+            return 27.5;
+        } else {
+            // sell_year >= 2022
+            if ($holding_years >= 20) return 0.0;
+            if ($holding_years >= 15) return 0.0;
+            if ($holding_years >= 10) return 15.0;
+            if ($holding_years >= 5) return 20.0;
+            return 25.0;
+        }
+    }
+
+    /**
+     * Compute normirani stroški (standardized costs) for Slovenian tax.
+     * Formula: norm = min(0.01 * buy_cost + 0.01 * sell_proceeds, max(0, gain))
+     * 
+     * @param string $buy_cost_eur Buy cost in EUR
+     * @param string $sell_proceeds_eur Sell proceeds in EUR
+     * @param string $gain_eur Gain (sell_proceeds - buy_cost) in EUR
+     * @return string Normirani stroški amount in EUR
+     */
+    public function compute_normirani_stroski(string $buy_cost_eur, string $sell_proceeds_eur, string $gain_eur): string
+    {
+        // norm_raw = 0.01 * buy_cost + 0.01 * sell_proceeds
+        $norm_raw = $this->multiply_decimals('0.01', $buy_cost_eur);
+        $norm_raw = $this->add_decimals($norm_raw, $this->multiply_decimals('0.01', $sell_proceeds_eur));
+        
+        // norm = min(norm_raw, max(0, gain))
+        $gain_non_neg = $this->compare_decimals($gain_eur, '0') > 0 ? $gain_eur : '0.00';
+        $norm = $this->compare_decimals($norm_raw, $gain_non_neg) <= 0 ? $norm_raw : $gain_non_neg;
+        
+        return $this->round_decimal($norm, 2);
     }
 
     // Decimal-safe math functions

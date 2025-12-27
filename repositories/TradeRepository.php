@@ -25,12 +25,19 @@ class TradeRepository
             $sql .= ' AND instrument_id = :instrument_id';
         }
 
+        if (isset($filters['year'])) {
+            $sql .= ' AND YEAR(trade_date) = :year';
+        }
+
         $sql .= ' ORDER BY trade_date DESC, id DESC';
 
         $stmt = $this->db->prepare($sql);
         $params = ['user_id' => $user_id];
         if (isset($filters['instrument_id'])) {
             $params['instrument_id'] = $filters['instrument_id'];
+        }
+        if (isset($filters['year'])) {
+            $params['year'] = (int) $filters['year'];
         }
         $stmt->execute($params);
 
@@ -57,6 +64,22 @@ class TradeRepository
         }
 
         return $trades;
+    }
+
+    /**
+     * Get minimum year from all trades for the user (for year filter).
+     */
+    public function get_min_year(int $user_id): ?int
+    {
+        $stmt = $this->db->prepare('
+            SELECT MIN(YEAR(trade_date)) as min_year
+            FROM trade
+            WHERE user_id = :user_id AND is_voided = 0
+        ');
+        $stmt->execute(['user_id' => $user_id]);
+        $row = $stmt->fetch();
+        
+        return $row && $row['min_year'] !== null ? (int) $row['min_year'] : null;
     }
 
     public function find_by_id(int $user_id, int $trade_id): ?Trade

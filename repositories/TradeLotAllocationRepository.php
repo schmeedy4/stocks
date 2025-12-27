@@ -42,9 +42,11 @@ class TradeLotAllocationRepository
             SELECT 
                 a.id, a.user_id, a.sell_trade_id, a.trade_lot_id, a.quantity_consumed,
                 a.proceeds_eur, a.cost_basis_eur, a.realized_pnl_eur,
-                l.opened_date
+                l.opened_date as lot_opened_date,
+                t.trade_date as sell_trade_date
             FROM trade_lot_allocation a
             INNER JOIN trade_lot l ON a.trade_lot_id = l.id AND a.user_id = l.user_id
+            INNER JOIN trade t ON a.sell_trade_id = t.id AND a.user_id = t.user_id
             WHERE a.user_id = :user_id AND a.sell_trade_id = :sell_trade_id
             ORDER BY a.id ASC
         ');
@@ -63,7 +65,8 @@ class TradeLotAllocationRepository
                     $row['cost_basis_eur'],
                     $row['realized_pnl_eur']
                 ),
-                'lot_opened_date' => $row['opened_date'],
+                'lot_opened_date' => $row['lot_opened_date'],
+                'sell_trade_date' => $row['sell_trade_date'],
             ];
         }
 
