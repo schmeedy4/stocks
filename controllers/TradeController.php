@@ -26,40 +26,13 @@ class TradeController
             exit;
         }
 
-        // Get year filter (default to current year)
-        $selected_year = isset($_GET['year']) && $_GET['year'] !== '' 
-            ? (int) $_GET['year'] 
-            : (int) date('Y');
-        
-        $filters = [];
-        if ($selected_year) {
-            $filters['year'] = $selected_year;
-        }
-
-        $trades = $this->trade_service->list_trades($user_id, $filters);
-        
-        // Get min year for year selector
-        $min_year = $this->trade_service->get_min_year($user_id);
-        if ($min_year === null) {
-            $min_year = (int) date('Y');
-        }
+        $trades = $this->trade_service->list_trades($user_id);
 
         // Get instruments for display
         $instruments = [];
         foreach ($trades as $trade) {
             if (!isset($instruments[$trade->instrument_id])) {
                 $instruments[$trade->instrument_id] = $this->instrument_repo->find_by_id($trade->instrument_id);
-            }
-        }
-
-        // Get tax totals for SELL trades
-        $sell_tax_totals = [];
-        foreach ($trades as $trade) {
-            if ($trade->trade_type === 'SELL') {
-                $tax_totals = $this->trade_service->get_sell_tax_totals($user_id, $trade->id);
-                if ($tax_totals !== null) {
-                    $sell_tax_totals[$trade->id] = $tax_totals;
-                }
             }
         }
 
