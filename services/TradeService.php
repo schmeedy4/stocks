@@ -30,8 +30,16 @@ class TradeService
             throw new ValidationException('Validation failed', $errors);
         }
 
+        // Convert broker_fx_rate to fx_rate_to_eur
+        $trade_currency = strtoupper(trim($input['trade_currency']));
+        $fx_rate_to_eur = '1.00000000';
+        if ($trade_currency !== 'EUR' && isset($input['broker_fx_rate']) && $input['broker_fx_rate'] !== '') {
+            $fx_rate_to_eur = $this->divide_decimals('1', $input['broker_fx_rate']);
+            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 8);
+        }
+
         // Calculate price_eur = round(price_per_unit * fx_rate_to_eur, 8)
-        $price_eur = $this->multiply_decimals($input['price_per_unit'], $input['fx_rate_to_eur']);
+        $price_eur = $this->multiply_decimals($input['price_per_unit'], $fx_rate_to_eur);
         $price_eur = $this->round_decimal($price_eur, 8);
 
         // Calculate total_value_eur = round(quantity * price_eur, 2)
@@ -51,10 +59,10 @@ class TradeService
             'quantity' => $this->round_decimal($input['quantity'], 6),
             'price_per_unit' => $this->round_decimal($input['price_per_unit'], 8),
             'price_eur' => $price_eur,
-            'trade_currency' => strtoupper(trim($input['trade_currency'])),
+            'trade_currency' => $trade_currency,
             'fee_amount' => $input['fee_amount'] ?? null,
             'fee_currency' => isset($input['fee_currency']) ? strtoupper(trim($input['fee_currency'])) : null,
-            'fx_rate_to_eur' => $this->round_decimal($input['fx_rate_to_eur'], 8),
+            'fx_rate_to_eur' => $fx_rate_to_eur,
             'total_value_eur' => $total_value_eur,
             'fee_eur' => $fee_eur,
             'notes' => $input['notes'] ?? null,
@@ -95,8 +103,16 @@ class TradeService
             throw new ValidationException('Validation failed', $errors);
         }
 
+        // Convert broker_fx_rate to fx_rate_to_eur
+        $trade_currency = strtoupper(trim($input['trade_currency']));
+        $fx_rate_to_eur = '1.00000000';
+        if ($trade_currency !== 'EUR' && isset($input['broker_fx_rate']) && $input['broker_fx_rate'] !== '') {
+            $fx_rate_to_eur = $this->divide_decimals('1', $input['broker_fx_rate']);
+            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 8);
+        }
+
         // Calculate price_eur = round(price_per_unit * fx_rate_to_eur, 8)
-        $price_eur = $this->multiply_decimals($input['price_per_unit'], $input['fx_rate_to_eur']);
+        $price_eur = $this->multiply_decimals($input['price_per_unit'], $fx_rate_to_eur);
         $price_eur = $this->round_decimal($price_eur, 8);
 
         // Calculate total_value_eur = round(quantity * price_eur, 2)
@@ -116,10 +132,10 @@ class TradeService
             'quantity' => $sell_qty,
             'price_per_unit' => $this->round_decimal($input['price_per_unit'], 8),
             'price_eur' => $price_eur,
-            'trade_currency' => strtoupper(trim($input['trade_currency'])),
+            'trade_currency' => $trade_currency,
             'fee_amount' => $input['fee_amount'] ?? null,
             'fee_currency' => isset($input['fee_currency']) ? strtoupper(trim($input['fee_currency'])) : null,
-            'fx_rate_to_eur' => $this->round_decimal($input['fx_rate_to_eur'], 8),
+            'fx_rate_to_eur' => $fx_rate_to_eur,
             'total_value_eur' => $total_value_eur,
             'fee_eur' => $fee_eur,
             'notes' => $input['notes'] ?? null,
@@ -234,8 +250,16 @@ class TradeService
             throw new NotFoundException('Buy trade not found');
         }
 
+        // Convert broker_fx_rate to fx_rate_to_eur
+        $trade_currency = strtoupper(trim($input['trade_currency']));
+        $fx_rate_to_eur = '1.00000000';
+        if ($trade_currency !== 'EUR' && isset($input['broker_fx_rate']) && $input['broker_fx_rate'] !== '') {
+            $fx_rate_to_eur = $this->divide_decimals('1', $input['broker_fx_rate']);
+            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 8);
+        }
+
         // Calculate price_eur = round(price_per_unit * fx_rate_to_eur, 8)
-        $price_eur = $this->multiply_decimals($input['price_per_unit'], $input['fx_rate_to_eur']);
+        $price_eur = $this->multiply_decimals($input['price_per_unit'], $fx_rate_to_eur);
         $price_eur = $this->round_decimal($price_eur, 8);
 
         // Calculate total_value_eur = round(quantity * price_eur, 2)
@@ -254,10 +278,10 @@ class TradeService
             'quantity' => $this->round_decimal($input['quantity'], 6),
             'price_per_unit' => $this->round_decimal($input['price_per_unit'], 8),
             'price_eur' => $price_eur,
-            'trade_currency' => strtoupper(trim($input['trade_currency'])),
+            'trade_currency' => $trade_currency,
             'fee_amount' => $input['fee_amount'] ?? null,
             'fee_currency' => isset($input['fee_currency']) ? strtoupper(trim($input['fee_currency'])) : null,
-            'fx_rate_to_eur' => $this->round_decimal($input['fx_rate_to_eur'], 8),
+            'fx_rate_to_eur' => $fx_rate_to_eur,
             'total_value_eur' => $total_value_eur,
             'fee_eur' => $fee_eur,
             'notes' => $input['notes'] ?? null,
@@ -302,10 +326,18 @@ class TradeService
         $existing_allocations = $this->allocation_repo->list_by_sell_trade($user_id, $trade_id);
         
         // Check if quantity/price changed - if so, need to recalculate allocations
+        // Convert broker_fx_rate to fx_rate_to_eur
+        $trade_currency = strtoupper(trim($input['trade_currency']));
+        $fx_rate_to_eur = '1.00000000';
+        if ($trade_currency !== 'EUR' && isset($input['broker_fx_rate']) && $input['broker_fx_rate'] !== '') {
+            $fx_rate_to_eur = $this->divide_decimals('1', $input['broker_fx_rate']);
+            $fx_rate_to_eur = $this->round_decimal($fx_rate_to_eur, 8);
+        }
+
         $new_quantity = $this->round_decimal($input['quantity'], 6);
         $quantity_changed = $this->compare_decimals($new_quantity, $existing_trade->quantity) !== 0;
         
-        $new_price_eur = $this->multiply_decimals($input['price_per_unit'], $input['fx_rate_to_eur']);
+        $new_price_eur = $this->multiply_decimals($input['price_per_unit'], $fx_rate_to_eur);
         $new_price_eur = $this->round_decimal($new_price_eur, 8);
         $price_changed = $this->compare_decimals($new_price_eur, $existing_trade->price_eur) !== 0;
 
@@ -326,7 +358,7 @@ class TradeService
             throw new ValidationException('Validation failed', $errors);
         }
 
-        // Calculate price_eur and total_value_eur
+        // Calculate price_eur and total_value_eur (fx_rate_to_eur already converted above)
         $price_eur = $new_price_eur;
         $total_value_eur = $this->multiply_decimals($new_quantity, $price_eur);
         $total_value_eur = $this->round_decimal($total_value_eur, 2);
@@ -403,10 +435,10 @@ class TradeService
             'quantity' => $new_quantity,
             'price_per_unit' => $this->round_decimal($input['price_per_unit'], 8),
             'price_eur' => $price_eur,
-            'trade_currency' => strtoupper(trim($input['trade_currency'])),
+            'trade_currency' => $trade_currency,
             'fee_amount' => $input['fee_amount'] ?? null,
             'fee_currency' => isset($input['fee_currency']) ? strtoupper(trim($input['fee_currency'])) : null,
-            'fx_rate_to_eur' => $this->round_decimal($input['fx_rate_to_eur'], 8),
+            'fx_rate_to_eur' => $fx_rate_to_eur,
             'total_value_eur' => $total_value_eur,
             'fee_eur' => $fee_eur,
             'notes' => $input['notes'] ?? null,
@@ -457,11 +489,14 @@ class TradeService
             $errors['trade_currency'] = 'Trade currency must be 3 characters';
         }
 
-        // fx_rate_to_eur > 0
-        if (!isset($input['fx_rate_to_eur']) || $input['fx_rate_to_eur'] === '') {
-            $errors['fx_rate_to_eur'] = 'FX rate to EUR is required';
-        } elseif ($this->compare_decimals($input['fx_rate_to_eur'], '0') <= 0) {
-            $errors['fx_rate_to_eur'] = 'FX rate must be greater than 0';
+        // broker_fx_rate > 0 (only for non-EUR trades)
+        $trade_currency = isset($input['trade_currency']) ? strtoupper(trim($input['trade_currency'])) : '';
+        if ($trade_currency !== 'EUR') {
+            if (!isset($input['broker_fx_rate']) || $input['broker_fx_rate'] === '') {
+                $errors['broker_fx_rate'] = 'FX rate (EUR → ' . $trade_currency . ') is required';
+            } elseif ($this->compare_decimals($input['broker_fx_rate'], '0') <= 0) {
+                $errors['broker_fx_rate'] = 'FX rate must be greater than 0';
+            }
         }
 
         // fee_eur >= 0 (optional)

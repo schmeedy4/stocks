@@ -78,13 +78,27 @@ ob_start();
         <?php endif; ?>
     </div>
 
+    <?php
+    $trade_currency = strtoupper(trim($trade->trade_currency ?? 'EUR'));
+    $is_eur = ($trade_currency === 'EUR');
+    if (!$is_eur):
+        // Calculate broker_fx_rate from stored fx_rate_to_eur for display (if available)
+        $broker_fx_rate = '';
+        if (isset($trade->fx_rate_to_eur) && $trade->fx_rate_to_eur !== '' && $trade->fx_rate_to_eur !== '0') {
+            $broker_fx_rate = number_format(1 / (float)$trade->fx_rate_to_eur, 8, '.', '');
+        }
+        if (isset($trade->broker_fx_rate)) {
+            $broker_fx_rate = $trade->broker_fx_rate;
+        }
+    ?>
     <div style="margin-bottom: 15px;">
-        <label for="fx_rate_to_eur">FX Rate to EUR <span style="color: red;">*</span>:</label><br>
-        <input type="number" id="fx_rate_to_eur" name="fx_rate_to_eur" value="<?= htmlspecialchars($trade->fx_rate_to_eur ?? '1.00000000') ?>" step="any" required style="width: 400px; padding: 5px;">
-        <?php if (isset($errors['fx_rate_to_eur'])): ?>
-            <span style="color: red;"><?= htmlspecialchars($errors['fx_rate_to_eur']) ?></span>
+        <label for="broker_fx_rate">FX Rate (EUR → <?= htmlspecialchars($trade_currency) ?>) <span style="color: red;">*</span>:</label><br>
+        <input type="number" id="broker_fx_rate" name="broker_fx_rate" value="<?= htmlspecialchars($broker_fx_rate) ?>" step="any" required style="width: 400px; padding: 5px;">
+        <?php if (isset($errors['broker_fx_rate'])): ?>
+            <span style="color: red;"><?= htmlspecialchars($errors['broker_fx_rate']) ?></span>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <div style="margin-bottom: 15px;">
         <label for="fee_eur">Fee EUR:</label><br>

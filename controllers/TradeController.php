@@ -61,7 +61,6 @@ class TradeController
             'quantity' => '',
             'price_per_unit' => '',
             'trade_currency' => 'EUR',
-            'fx_rate_to_eur' => '1.00000000',
             'fee_eur' => '',
             'notes' => '',
         ], $old_input) : (object) [
@@ -71,7 +70,6 @@ class TradeController
             'quantity' => '',
             'price_per_unit' => '',
             'trade_currency' => 'EUR',
-            'fx_rate_to_eur' => '1.00000000',
             'fee_eur' => '',
             'notes' => '',
         ];
@@ -101,7 +99,7 @@ class TradeController
             'quantity' => $_POST['quantity'] ?? '',
             'price_per_unit' => $_POST['price_per_unit'] ?? '',
             'trade_currency' => $_POST['trade_currency'] ?? '',
-            'fx_rate_to_eur' => $_POST['fx_rate_to_eur'] ?? '',
+            'broker_fx_rate' => $_POST['broker_fx_rate'] ?? '',
             'fee_eur' => $_POST['fee_eur'] ?? '',
             'notes' => $_POST['notes'] ?? '',
         ];
@@ -140,7 +138,6 @@ class TradeController
             'quantity' => '',
             'price_per_unit' => '',
             'trade_currency' => 'EUR',
-            'fx_rate_to_eur' => '1.00000000',
             'fee_eur' => '',
             'notes' => '',
         ], $old_input) : (object) [
@@ -150,7 +147,6 @@ class TradeController
             'quantity' => '',
             'price_per_unit' => '',
             'trade_currency' => 'EUR',
-            'fx_rate_to_eur' => '1.00000000',
             'fee_eur' => '',
             'notes' => '',
         ];
@@ -180,7 +176,7 @@ class TradeController
             'quantity' => $_POST['quantity'] ?? '',
             'price_per_unit' => $_POST['price_per_unit'] ?? '',
             'trade_currency' => $_POST['trade_currency'] ?? '',
-            'fx_rate_to_eur' => $_POST['fx_rate_to_eur'] ?? '',
+            'broker_fx_rate' => $_POST['broker_fx_rate'] ?? '',
             'fee_eur' => $_POST['fee_eur'] ?? '',
             'notes' => $_POST['notes'] ?? '',
         ];
@@ -243,6 +239,12 @@ class TradeController
         $broker_accounts = $this->broker_repo->list_by_user($user_id);
 
         // Use old_input if available (from validation error), otherwise use trade
+        // Convert fx_rate_to_eur to broker_fx_rate for display
+        $broker_fx_rate = '';
+        if ($trade->trade_currency !== 'EUR' && $trade->fx_rate_to_eur !== '' && $trade->fx_rate_to_eur !== '0') {
+            $broker_fx_rate = number_format(1 / (float)$trade->fx_rate_to_eur, 8, '.', '');
+        }
+        
         if (!empty($old_input)) {
             $trade_data = (object) array_merge([
                 'id' => $id,
@@ -256,6 +258,10 @@ class TradeController
                 'fee_eur' => $trade->fee_eur,
                 'notes' => $trade->notes,
             ], $old_input);
+            // If old_input doesn't have broker_fx_rate but has fx_rate_to_eur, convert it
+            if (!isset($trade_data->broker_fx_rate) && isset($trade_data->fx_rate_to_eur) && $trade_data->trade_currency !== 'EUR' && $trade_data->fx_rate_to_eur !== '' && $trade_data->fx_rate_to_eur !== '0') {
+                $trade_data->broker_fx_rate = number_format(1 / (float)$trade_data->fx_rate_to_eur, 8, '.', '');
+            }
         } else {
             $trade_data = (object) [
                 'id' => $id,
@@ -266,6 +272,7 @@ class TradeController
                 'price_per_unit' => $trade->price_per_unit,
                 'trade_currency' => $trade->trade_currency,
                 'fx_rate_to_eur' => $trade->fx_rate_to_eur,
+                'broker_fx_rate' => $broker_fx_rate,
                 'fee_eur' => $trade->fee_eur,
                 'notes' => $trade->notes,
             ];
@@ -297,7 +304,7 @@ class TradeController
             'quantity' => $_POST['quantity'] ?? '',
             'price_per_unit' => $_POST['price_per_unit'] ?? '',
             'trade_currency' => $_POST['trade_currency'] ?? '',
-            'fx_rate_to_eur' => $_POST['fx_rate_to_eur'] ?? '',
+            'broker_fx_rate' => $_POST['broker_fx_rate'] ?? '',
             'fee_eur' => $_POST['fee_eur'] ?? '',
             'notes' => $_POST['notes'] ?? '',
         ];
