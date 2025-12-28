@@ -19,12 +19,12 @@ ob_start();
                 <th>Shares</th>
                 <th>Weight (%)</th>
                 <th>Avg Cost</th>
-                <th>Cost</th>
-                <th>Today's Gain</th>
+                <th>Cost (USD)</th>
+                <th>Today's Gain (USD)</th>
                 <th>Today's Gain (%)</th>
-                <th>Total Change</th>
+                <th>Total Change (USD)</th>
                 <th>Total Change (%)</th>
-                <th>Value</th>
+                <th>Value (USD)</th>
                 <th>Sell 100% Tax (EUR)</th>
                 <th>No tax date</th>
                 <th>Price date</th>
@@ -38,18 +38,18 @@ ob_start();
                 ?>
                 <tr>
                     <td><?= htmlspecialchars($symbol) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['close_price'], 2, '.', '')) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['change'], 2, '.', '')) ?></td>
+                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['close_price_usd'], 2, '.', '')) ?></td>
+                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['change_usd'], 2, '.', '')) ?></td>
                     <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['change_percent'], 2, '.', '')) ?>%</td>
                     <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['shares'], 0, '.', '')) ?></td>
                     <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['weight_percent'], 2, '.', '')) ?>%</td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['avg_cost'], 8, '.', '')) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['cost_basis_original'], 2, '.', '')) ?> <?= htmlspecialchars($holding['cost_currency']) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['todays_gain_eur'], 2, '.', '')) ?></td>
+                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['avg_cost'], 2, '.', '')) ?></td>
+                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['cost_basis_usd'], 2, '.', '')) ?></td>
+                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['todays_gain_usd'], 2, '.', '')) ?></td>
                     <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['todays_gain_percent'], 2, '.', '')) ?>%</td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['total_change_eur'], 2, '.', '')) ?></td>
+                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['total_change_usd'], 2, '.', '')) ?></td>
                     <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['total_change_percent'], 2, '.', '')) ?>%</td>
-                    <td style="text-align: right;"><strong><?= htmlspecialchars(number_format((float)$holding['value_eur'], 2, '.', '')) ?></strong></td>
+                    <td style="text-align: right;"><strong><?= htmlspecialchars(number_format((float)$holding['value_usd'], 2, '.', '')) ?></strong></td>
                     <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['sell_100_tax_eur'], 2, '.', '')) ?></td>
                     <td><?= $holding['no_tax_date'] !== null ? htmlspecialchars($holding['no_tax_date']) : '-' ?></td>
                     <td><?= $holding['price_date'] !== null ? htmlspecialchars($holding['price_date']) : '-' ?></td>
