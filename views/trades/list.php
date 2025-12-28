@@ -4,62 +4,78 @@ $page_title = 'Trades';
 ob_start();
 ?>
 
-<h1>Trades</h1>
-
-<p>
-    <a href="?action=trade_new_buy">Add BUY</a> |
-    <a href="?action=trade_new_sell">Add SELL</a>
-</p>
+<div class="mb-6 flex justify-between items-center">
+    <h1 class="text-3xl font-bold text-gray-900">Trades</h1>
+    <div class="flex gap-3">
+        <a href="?action=trade_new_buy" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
+            Add BUY
+        </a>
+        <a href="?action=trade_new_sell" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
+            Add SELL
+        </a>
+    </div>
+</div>
 
 <?php if (empty($trades)): ?>
-    <p>No trades found.</p>
+    <div class="bg-white rounded-lg shadow p-6">
+        <p class="text-gray-600">No trades found.</p>
+    </div>
 <?php else: ?>
-    <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse;">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Instrument</th>
-                <th>Qty</th>
-                <th>Price</th>
-                <th>Currency</th>
-                <th>Price EUR</th>
-                <th>Total EUR</th>
-                <th>Fee EUR</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($trades as $trade): ?>
-                <?php 
-                $instrument = $instruments[$trade->instrument_id] ?? null;
-                ?>
-                <tr>
-                    <td><?= htmlspecialchars($trade->trade_date) ?></td>
-                    <td><?= htmlspecialchars($trade->trade_type) ?></td>
-                    <td>
-                        <?php if ($instrument): ?>
-                            <?= htmlspecialchars($instrument->ticker ? $instrument->ticker . ' - ' . $instrument->name : $instrument->name) ?>
-                        <?php else: ?>
-                            ID: <?= htmlspecialchars((string)$trade->instrument_id) ?>
-                        <?php endif; ?>
-                    </td>
-                    <td><?= htmlspecialchars($trade->quantity) ?></td>
-                    <td><?= htmlspecialchars($trade->price_per_unit) ?></td>
-                    <td><?= htmlspecialchars($trade->trade_currency) ?></td>
-                    <td><?= htmlspecialchars($trade->price_eur) ?></td>
-                    <td><?= htmlspecialchars($trade->total_value_eur) ?></td>
-                    <td><?= htmlspecialchars($trade->fee_eur) ?></td>
-                    <td>
-                        <a href="?action=trade_edit&id=<?= $trade->id ?>">Edit</a>
-                        <?php if ($trade->trade_type === 'SELL'): ?>
-                            | <a href="?action=trade_view_sell&id=<?= $trade->id ?>">View</a>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instrument</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Currency</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price EUR</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total EUR</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Fee EUR</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <?php foreach ($trades as $index => $trade): ?>
+                        <?php 
+                        $instrument = $instruments[$trade->instrument_id] ?? null;
+                        ?>
+                        <tr class="<?= $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' ?> hover:bg-blue-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($trade->trade_date) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full <?= $trade->trade_type === 'BUY' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' ?>">
+                                    <?= htmlspecialchars($trade->trade_type) ?>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                <?php if ($instrument): ?>
+                                    <?= htmlspecialchars($instrument->ticker ? $instrument->ticker . ' - ' . $instrument->name : $instrument->name) ?>
+                                <?php else: ?>
+                                    ID: <?= htmlspecialchars((string)$trade->instrument_id) ?>
+                                <?php endif; ?>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->quantity) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->price_per_unit) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($trade->trade_currency) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->price_eur) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->total_value_eur) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->fee_eur) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <a href="?action=trade_edit&id=<?= $trade->id ?>" class="text-blue-600 hover:text-blue-900">Edit</a>
+                                <?php if ($trade->trade_type === 'SELL'): ?>
+                                    <span class="text-gray-300 mx-1">|</span>
+                                    <a href="?action=trade_view_sell&id=<?= $trade->id ?>" class="text-blue-600 hover:text-blue-900">View</a>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
 <?php endif; ?>
 
 <?php

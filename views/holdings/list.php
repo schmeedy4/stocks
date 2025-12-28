@@ -4,60 +4,70 @@ $page_title = 'Holdings';
 ob_start();
 ?>
 
-<h1>Holdings</h1>
+<div class="max-w-12xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">Holdings</h1>
+    </div>
 
-<?php if (empty($holdings)): ?>
-    <p>No open positions found.</p>
-<?php else: ?>
-    <table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
-        <thead>
-            <tr>
-                <th>Symbol</th>
-                <th>Price</th>
-                <th>Change</th>
-                <th>Change (%)</th>
-                <th>Shares</th>
-                <th>Weight (%)</th>
-                <th>Avg Cost</th>
-                <th>Cost (USD)</th>
-                <th>Today's Gain (USD)</th>
-                <th>Today's Gain (%)</th>
-                <th>Total Change (USD)</th>
-                <th>Total Change (%)</th>
-                <th>Value (USD)</th>
-                <th>Sell 100% Tax</th>
-                <th>No tax date</th>
-                <th>Price date</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($holdings as $holding): ?>
-                <?php 
-                $instrument = $holding['instrument'];
-                $symbol = $instrument->ticker ?: $instrument->name;
-                ?>
-                <tr>
-                    <td><?= htmlspecialchars($symbol) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['close_price_usd'], 2, '.', '')) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['change_usd'], 2, '.', '')) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['change_percent'], 2, '.', '')) ?>%</td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['shares'], 0, '.', '')) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['weight_percent'], 2, '.', '')) ?>%</td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['avg_cost'], 2, '.', '')) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['cost_basis_usd'], 2, '.', '')) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['todays_gain_usd'], 2, '.', '')) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['todays_gain_percent'], 2, '.', '')) ?>%</td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['total_change_usd'], 2, '.', '')) ?></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['total_change_percent'], 2, '.', '')) ?>%</td>
-                    <td style="text-align: right;"><strong><?= htmlspecialchars(number_format((float)$holding['value_usd'], 2, '.', '')) ?></strong></td>
-                    <td style="text-align: right;"><?= htmlspecialchars(number_format((float)$holding['sell_100_tax_eur'], 2, '.', '')) ?></td>
-                    <td><?= $holding['no_tax_date'] !== null ? htmlspecialchars($holding['no_tax_date']) : '-' ?></td>
-                    <td><?= $holding['price_date'] !== null ? htmlspecialchars($holding['price_date']) : '-' ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-<?php endif; ?>
+    <?php if (empty($holdings)): ?>
+        <div class="bg-white rounded-lg shadow p-6">
+            <p class="text-gray-600">No open positions found.</p>
+        </div>
+    <?php else: ?>
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">Symbol</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Change (%)</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Shares</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Weight (%)</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Cost</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cost (USD)</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Today's Gain (USD)</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Today's Gain (%)</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Change (USD)</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Change (%)</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Value (USD)</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sell 100% Tax</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No tax date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price date</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <?php foreach ($holdings as $index => $holding): ?>
+                        <?php 
+                        $instrument = $holding['instrument'];
+                        $symbol = $instrument->ticker ?: $instrument->name;
+                        ?>
+                        <tr class="<?= $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' ?> hover:bg-blue-50">
+                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 <?= $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' ?> z-10"><?= htmlspecialchars($symbol) ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars(number_format((float)$holding['close_price_usd'], 2, '.', '')) ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-right <?= (float)$holding['change_usd'] >= 0 ? 'text-green-600' : 'text-red-600' ?>"><?= htmlspecialchars(number_format((float)$holding['change_usd'], 2, '.', '')) ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-right <?= (float)$holding['change_percent'] >= 0 ? 'text-green-600' : 'text-red-600' ?>"><?= htmlspecialchars(number_format((float)$holding['change_percent'], 2, '.', '')) ?>%</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars(number_format((float)$holding['shares'], 0, '.', '')) ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars(number_format((float)$holding['weight_percent'], 2, '.', '')) ?>%</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars(number_format((float)$holding['avg_cost'], 2, '.', '')) ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars(number_format((float)$holding['cost_basis_usd'], 2, '.', '')) ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-right <?= (float)$holding['todays_gain_usd'] >= 0 ? 'text-green-600' : 'text-red-600' ?>"><?= htmlspecialchars(number_format((float)$holding['todays_gain_usd'], 2, '.', '')) ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-right <?= (float)$holding['todays_gain_percent'] >= 0 ? 'text-green-600' : 'text-red-600' ?>"><?= htmlspecialchars(number_format((float)$holding['todays_gain_percent'], 2, '.', '')) ?>%</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-right <?= (float)$holding['total_change_usd'] >= 0 ? 'text-green-600' : 'text-red-600' ?>"><?= htmlspecialchars(number_format((float)$holding['total_change_usd'], 2, '.', '')) ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-right <?= (float)$holding['total_change_percent'] >= 0 ? 'text-green-600' : 'text-red-600' ?>"><?= htmlspecialchars(number_format((float)$holding['total_change_percent'], 2, '.', '')) ?>%</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 text-right"><?= htmlspecialchars(number_format((float)$holding['value_usd'], 2, '.', '')) ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars(number_format((float)$holding['sell_100_tax_eur'], 2, '.', '')) ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600"><?= $holding['no_tax_date'] !== null ? htmlspecialchars($holding['no_tax_date']) : '-' ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600"><?= $holding['price_date'] !== null ? htmlspecialchars($holding['price_date']) : '-' ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                </table>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
 
 <?php
 $content = ob_get_clean();
