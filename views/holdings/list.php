@@ -25,7 +25,7 @@ ob_start();
                 <th>Total Change (USD)</th>
                 <th>Total Change (%)</th>
                 <th>Value (USD)</th>
-                <th>Sell 100% Tax (EUR)</th>
+                <th>Sell 100% Tax</th>
                 <th>No tax date</th>
                 <th>Price date</th>
             </tr>

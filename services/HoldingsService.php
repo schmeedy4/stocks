@@ -158,14 +158,9 @@ class HoldingsService
             $todays_gain_usd = $this->multiply_decimals($change_usd, $shares);
             $todays_gain_usd = $this->round_decimal($todays_gain_usd, 2);
 
-            $todays_gain_percent = '0.00';
-            if ($this->compare_decimals($total_cost_basis_usd, '0') > 0) {
-                $todays_gain_percent = $this->multiply_decimals(
-                    $this->divide_decimals($todays_gain_usd, $total_cost_basis_usd),
-                    '100'
-                );
-                $todays_gain_percent = $this->round_decimal($todays_gain_percent, 2);
-            }
+            // Today's Gain (%) = (price_today - price_previous) / price_previous * 100
+            // This is the same as change_percent
+            $todays_gain_percent = $change_percent;
 
             // Calculate total change in USD (Value - Cost)
             $total_change_usd = $this->subtract_decimals($value_usd, $total_cost_basis_usd);
