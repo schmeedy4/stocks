@@ -32,7 +32,7 @@ ob_start();
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Change (USD)</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Change (%)</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Value (USD)</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sell 100% Tax</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sell 100% Tax (USD)</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No tax date</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price date</th>
                     </tr>
@@ -57,7 +57,7 @@ ob_start();
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-right <?= (float)$holding['total_change_usd'] >= 0 ? 'text-green-600' : 'text-red-600' ?>"><?= htmlspecialchars(number_format((float)$holding['total_change_usd'], 2, '.', '')) ?></td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-right <?= (float)$holding['total_change_percent'] >= 0 ? 'text-green-600' : 'text-red-600' ?>"><?= htmlspecialchars(number_format((float)$holding['total_change_percent'], 2, '.', '')) ?>%</td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 text-right"><?= htmlspecialchars(number_format((float)$holding['value_usd'], 2, '.', '')) ?></td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars(number_format((float)$holding['sell_100_tax_eur'], 2, '.', '')) ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars(number_format((float)($holding['sell_100_tax_usd'] ?? $holding['sell_100_tax_eur']), 2, '.', '')) ?></td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600"><?= $holding['no_tax_date'] !== null ? htmlspecialchars($holding['no_tax_date']) : '-' ?></td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600"><?= $holding['price_date'] !== null ? htmlspecialchars($holding['price_date']) : '-' ?></td>
                         </tr>

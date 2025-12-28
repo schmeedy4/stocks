@@ -173,7 +173,7 @@ class HoldingsService
                 $total_change_percent = $this->round_decimal($total_change_percent, 2);
             }
 
-            // Calculate sell 100% tax (Slovenia) - this remains in EUR
+            // Calculate sell 100% tax (Slovenia) - calculate in EUR first, then convert to USD
             // Tax calculation needs price in EUR, but we have USD price
             // Since we don't have current EUR/USD exchange rate, we'll approximate using fx_rate_to_eur from buy trades
             // Note: This uses historical rates, so it's an approximation
@@ -183,7 +183,8 @@ class HoldingsService
             // Try to estimate EUR/USD rate from buy trades (if any are USD)
             // fx_rate_to_eur converts FROM trade_currency TO EUR
             // For USD trades: fx_rate_to_eur = USD->EUR rate at buy time
-            // To convert current USD price to EUR: price_eur = price_usd * fx_rate_to_eur
+            // To convert current USD price to EUR: price_eur = price_usd * fx_rate_usd_to_eur
+            $avg_fx_rate_usd_to_eur = null;
             if ($price_currency === 'USD') {
                 $fx_rate_sum = '0';
                 $fx_rate_count = 0;
@@ -205,6 +206,17 @@ class HoldingsService
             // If price is already in EUR or we can't determine rate, use price as-is
             
             $sell_100_tax_eur = $this->compute_sell_100_tax_si($lots, $close_price_for_tax_eur, $sell_date);
+            
+            // Convert tax from EUR to USD
+            // fx_rate_to_eur converts USD->EUR, so to convert EUR->USD: tax_usd = tax_eur / fx_rate_to_eur
+            $sell_100_tax_usd = $sell_100_tax_eur;
+            if ($avg_fx_rate_usd_to_eur !== null && $this->compare_decimals($avg_fx_rate_usd_to_eur, '0') > 0) {
+                $sell_100_tax_usd = $this->divide_decimals($sell_100_tax_eur, $avg_fx_rate_usd_to_eur);
+                $sell_100_tax_usd = $this->round_decimal($sell_100_tax_usd, 2);
+            } else {
+                // If we can't determine rate, assume 1:1 (not ideal, but better than nothing)
+                $sell_100_tax_usd = $this->round_decimal($sell_100_tax_eur, 2);
+            }
 
             // Calculate no tax date
             $no_tax_date = $this->compute_no_tax_date($lots, $sell_date);
@@ -227,6 +239,7 @@ class HoldingsService
                 'total_change_usd' => $this->round_decimal($total_change_usd, 2),
                 'total_change_percent' => $total_change_percent,
                 'sell_100_tax_eur' => $sell_100_tax_eur,
+                'sell_100_tax_usd' => $sell_100_tax_usd,
                 'no_tax_date' => $no_tax_date,
                 'price_date' => $price_date,
             ];
