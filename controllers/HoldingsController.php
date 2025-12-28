@@ -22,7 +22,11 @@ class HoldingsController
             exit;
         }
 
-        $holdings = $this->holdings_service->get_holdings($user_id);
+        $result = $this->holdings_service->get_holdings($user_id);
+        $holdings = $result['holdings'];
+        $total_portfolio_value_usd = $result['total_portfolio_value_usd'];
+        $total_todays_gain_usd = $result['total_todays_gain_usd'];
+        $total_todays_gain_percent = $result['total_todays_gain_percent'];
 
         require __DIR__ . '/../views/holdings/list.php';
     }

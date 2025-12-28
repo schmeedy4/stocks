@@ -6,7 +6,14 @@ ob_start();
 
 <div class="max-w-12xl mx-auto">
     <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-900">Holdings</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Holdings</h1>
+        <div>
+            <span class="text-2xl font-semibold text-gray-900"><?= htmlspecialchars(number_format((float)$total_portfolio_value_usd, 2, '.', ',')) ?></span>
+            <span class="ml-3 text-sm <?= (float)$total_todays_gain_usd >= 0 ? 'text-green-600' : 'text-red-600' ?>">
+                <?= (float)$total_todays_gain_usd >= 0 ? '+' : '' ?><?= htmlspecialchars(number_format((float)$total_todays_gain_usd, 2, '.', ',')) ?>
+                (<?= (float)$total_todays_gain_percent >= 0 ? '+' : '' ?><?= htmlspecialchars(number_format((float)$total_todays_gain_percent, 2, '.', '')) ?>%)
+            </span>
+        </div>
     </div>
 
     <?php if (empty($holdings)): ?>

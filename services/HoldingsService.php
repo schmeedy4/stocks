@@ -247,10 +247,27 @@ class HoldingsService
 
         // Calculate portfolio total value and weights (in USD)
         $total_portfolio_value_usd = '0.00';
+        $total_todays_gain_usd = '0.00';
         foreach ($holdings as $holding) {
             $total_portfolio_value_usd = $this->add_decimals($total_portfolio_value_usd, $holding['value_usd']);
+            $total_todays_gain_usd = $this->add_decimals($total_todays_gain_usd, $holding['todays_gain_usd']);
         }
         $total_portfolio_value_usd = $this->round_decimal($total_portfolio_value_usd, 2);
+        $total_todays_gain_usd = $this->round_decimal($total_todays_gain_usd, 2);
+
+        // Calculate total today's gain percentage
+        $total_todays_gain_percent = '0.00';
+        // We need previous day's total value to calculate percentage
+        // For now, calculate based on current value and gain
+        // gain_percent = (gain / (value - gain)) * 100
+        $previous_total_value = $this->subtract_decimals($total_portfolio_value_usd, $total_todays_gain_usd);
+        if ($this->compare_decimals($previous_total_value, '0') > 0) {
+            $total_todays_gain_percent = $this->multiply_decimals(
+                $this->divide_decimals($total_todays_gain_usd, $previous_total_value),
+                '100'
+            );
+            $total_todays_gain_percent = $this->round_decimal($total_todays_gain_percent, 2);
+        }
 
         // Add weight to each holding
         foreach ($holdings as &$holding) {
@@ -266,7 +283,13 @@ class HoldingsService
         }
         unset($holding);
 
-        return $holdings;
+        // Add portfolio totals to return value
+        return [
+            'holdings' => $holdings,
+            'total_portfolio_value_usd' => $total_portfolio_value_usd,
+            'total_todays_gain_usd' => $total_todays_gain_usd,
+            'total_todays_gain_percent' => $total_todays_gain_percent,
+        ];
     }
 
     /**
