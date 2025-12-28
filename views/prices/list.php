@@ -38,17 +38,56 @@ if ($update_result !== null) {
 }
 ?>
 
-<form method="POST" action="?action=price_update" style="margin-bottom: 20px;">
-    <p>
-        <label>
-            <input type="checkbox" name="force_update" value="1">
-            Force update (ignore existing prices for today)
-        </label>
-    </p>
-    <p>
-        <button type="submit">Update prices (today)</button>
-    </p>
-</form>
+<?php
+// Show result from 5 days update if available
+$update_5days_result = $_SESSION['price_update_5days_result'] ?? null;
+if ($update_5days_result !== null) {
+    unset($_SESSION['price_update_5days_result']);
+    
+    $symbols_updated = $update_5days_result['symbols_updated'] ?? 0;
+    $symbols_failed = $update_5days_result['symbols_failed'] ?? 0;
+    $rows_upserted = $update_5days_result['rows_upserted'] ?? 0;
+    $duration = $update_5days_result['duration'] ?? 0;
+    $errors = $update_5days_result['errors'] ?? [];
+    ?>
+    <div class="error" style="background-color: #efe; border-color: #cec; color: #060;">
+        <h3>Last 5 days update completed</h3>
+        <p><strong>Symbols updated:</strong> <?= (int)$symbols_updated ?> | 
+           <strong>Symbols failed:</strong> <?= (int)$symbols_failed ?> | 
+           <strong>Rows upserted:</strong> <?= (int)$rows_upserted ?> | 
+           <strong>Duration:</strong> <?= number_format($duration, 2) ?> seconds</p>
+        <?php if (!empty($errors)): ?>
+            <h4>Errors:</h4>
+            <ul>
+                <?php foreach ($errors as $error): ?>
+                    <li><?= htmlspecialchars($error) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+?>
+
+<div style="margin-bottom: 20px;">
+    <form method="POST" action="?action=price_update" style="display: inline-block; margin-right: 20px;">
+        <p>
+            <label>
+                <input type="checkbox" name="force_update" value="1">
+                Force update (ignore existing prices for today)
+            </label>
+        </p>
+        <p>
+            <button type="submit">Update prices (today)</button>
+        </p>
+    </form>
+
+    <form method="POST" action="?action=price_update_5days" style="display: inline-block;">
+        <p>
+            <button type="submit">Update last 5 days</button>
+        </p>
+    </form>
+</div>
 
 <?php if (empty($portfolio_instruments)): ?>
     <p>No instruments with open positions found.</p>

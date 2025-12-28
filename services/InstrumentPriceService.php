@@ -118,6 +118,81 @@ class InstrumentPriceService
     }
 
     /**
+     * Update prices for last 5 days from Twelve Data API time series.
+     * Returns array with counts: ['symbols_updated' => int, 'symbols_failed' => int, 'rows_upserted' => int, 'errors' => array]
+     */
+    public function update_last_5_days(int $user_id): array
+    {
+        $instruments_with_qty = $this->lot_repo->get_instruments_with_availability($user_id, null, null, false);
+        
+        $symbols_updated = 0;
+        $symbols_failed = 0;
+        $rows_upserted = 0;
+        $errors = [];
+
+        foreach ($instruments_with_qty as $item) {
+            $instrument_id = $item['instrument_id'];
+            $instrument = $this->instrument_repo->find_by_id($instrument_id);
+            
+            if ($instrument === null || $instrument->ticker === null || $instrument->ticker === '') {
+                $symbols_failed++;
+                $errors[] = "Instrument ID {$instrument_id}: No ticker symbol";
+                continue;
+            }
+
+            try {
+                $time_series_data = $this->fetch_time_series_from_api($instrument->ticker);
+                
+                if ($time_series_data === null || empty($time_series_data['values'])) {
+                    $symbols_failed++;
+                    $errors[] = "{$instrument->ticker}: Failed to fetch time series from API";
+                    continue;
+                }
+
+                $currency = $time_series_data['currency'] ?? 'USD';
+
+                // Upsert each returned value
+                foreach ($time_series_data['values'] as $value) {
+                    if (!isset($value['datetime']) || !isset($value['close'])) {
+                        continue; // Skip invalid rows
+                    }
+
+                    $this->price_repo->upsert($user_id, [
+                        'instrument_id' => $instrument_id,
+                        'price_date' => $value['datetime'],
+                        'open_price' => isset($value['open']) ? (string) $value['open'] : null,
+                        'high_price' => isset($value['high']) ? (string) $value['high'] : null,
+                        'low_price' => isset($value['low']) ? (string) $value['low'] : null,
+                        'close_price' => (string) $value['close'],
+                        'volume' => isset($value['volume']) ? (string) $value['volume'] : null,
+                        'currency' => $currency,
+                        'source' => 'twelvedata',
+                    ]);
+
+                    $rows_upserted++;
+                }
+
+                $symbols_updated++;
+
+                // Throttle: sleep ~8 seconds between SYMBOL requests (8 requests/min limit)
+                sleep(8);
+
+            } catch (\Exception $e) {
+                $symbols_failed++;
+                $errors[] = "{$instrument->ticker}: " . $e->getMessage();
+                // Continue to next instrument
+            }
+        }
+
+        return [
+            'symbols_updated' => $symbols_updated,
+            'symbols_failed' => $symbols_failed,
+            'rows_upserted' => $rows_upserted,
+            'errors' => $errors,
+        ];
+    }
+
+    /**
      * Fetch latest price from Twelve Data API.
      * Returns array ['close_price' => string, 'currency' => string] or null on error.
      */
@@ -179,6 +254,65 @@ class InstrumentPriceService
 
         return [
             'close_price' => (string) $latest['close'],
+            'currency' => $currency,
+        ];
+    }
+
+    /**
+     * Fetch time series (last 5 days) from Twelve Data API.
+     * Returns array ['values' => array, 'currency' => string] or null on error.
+     */
+    private function fetch_time_series_from_api(string $symbol): ?array
+    {
+        if ($this->api_key === '') {
+            throw new \RuntimeException('Twelve Data API key not configured');
+        }
+
+        $url = "https://api.twelvedata.com/time_series?apikey={$this->api_key}&symbol={$symbol}&interval=1day&outputsize=5";
+        
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            // Disable SSL verification for local development (WAMP/XAMPP environments)
+            // In production, configure proper CA certificate bundle instead
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+        ]);
+
+        $response = curl_exec($curl);
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($curl);
+        curl_close($curl);
+
+        if ($curl_error !== '') {
+            throw new \RuntimeException("cURL error: {$curl_error}");
+        }
+
+        if ($http_code !== 200) {
+            throw new \RuntimeException("HTTP error: {$http_code}");
+        }
+
+        $data = json_decode($response, true);
+        
+        if (!is_array($data) || !isset($data['status']) || $data['status'] !== 'ok') {
+            throw new \RuntimeException('API returned error status');
+        }
+
+        if (!isset($data['values']) || !is_array($data['values']) || empty($data['values'])) {
+            throw new \RuntimeException('No price data in API response');
+        }
+
+        $currency = $data['meta']['currency'] ?? 'USD';
+
+        return [
+            'values' => $data['values'],
             'currency' => $currency,
         ];
     }

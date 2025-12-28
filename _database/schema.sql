@@ -320,9 +320,15 @@ CREATE TABLE instrument_price_daily (
   instrument_id BIGINT UNSIGNED NOT NULL,
 
   price_date DATE NOT NULL,
-  close_price DECIMAL(18,6) NOT NULL,
-  currency CHAR(3) NOT NULL DEFAULT 'USD',
 
+  open_price  DECIMAL(18,6) NULL,
+  high_price  DECIMAL(18,6) NULL,
+  low_price   DECIMAL(18,6) NULL,
+  close_price DECIMAL(18,6) NOT NULL,
+
+  volume BIGINT UNSIGNED NULL,
+
+  currency CHAR(3) NOT NULL DEFAULT 'USD',
   source VARCHAR(32) NOT NULL DEFAULT 'twelvedata',
   fetched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -331,12 +337,12 @@ CREATE TABLE instrument_price_daily (
 
   KEY idx_price_user_date (user_id, price_date),
   KEY idx_price_user_instr (user_id, instrument_id),
-
   UNIQUE KEY uniq_price_user_instr_date (user_id, instrument_id, price_date),
 
   CONSTRAINT fk_price_user FOREIGN KEY (user_id) REFERENCES user(id),
   CONSTRAINT fk_price_instr FOREIGN KEY (instrument_id) REFERENCES instrument(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- -----------------------------
 -- 11) instrument_price_latest (latest prices for instruments)

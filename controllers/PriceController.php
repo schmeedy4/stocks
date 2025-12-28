@@ -56,5 +56,31 @@ class PriceController
         header('Location: ?action=prices');
         exit;
     }
+
+    public function update_last_5_days_post(): void
+    {
+        $user_id = current_user_id();
+        if ($user_id === null) {
+            header('Location: ?action=login');
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=prices');
+            exit;
+        }
+
+        $start_time = microtime(true);
+        $result = $this->price_service->update_last_5_days($user_id);
+        $duration = microtime(true) - $start_time;
+
+        $result['duration'] = $duration;
+
+        // Store result in session to display after redirect (PRG pattern)
+        $_SESSION['price_update_5days_result'] = $result;
+
+        header('Location: ?action=prices');
+        exit;
+    }
 }
 

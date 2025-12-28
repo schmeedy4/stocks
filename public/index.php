@@ -283,6 +283,15 @@ switch ($action) {
         $controller->update_prices_post();
         break;
 
+    case 'price_update_5days':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=prices');
+            exit;
+        }
+        $controller = new PriceController();
+        $controller->update_last_5_days_post();
+        break;
+
     default:
         header('Location: ?action=login');
         exit;

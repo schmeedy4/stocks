@@ -98,13 +98,21 @@ class InstrumentPriceDailyRepository
     {
         $stmt = $this->db->prepare('
             INSERT INTO instrument_price_daily (
-                user_id, instrument_id, price_date, close_price, currency, source, fetched_at
+                user_id, instrument_id, price_date,
+                open_price, high_price, low_price, close_price, volume,
+                currency, source, fetched_at
             )
             VALUES (
-                :user_id, :instrument_id, :price_date, :close_price, :currency, :source, NOW()
+                :user_id, :instrument_id, :price_date,
+                :open_price, :high_price, :low_price, :close_price, :volume,
+                :currency, :source, NOW()
             )
             ON DUPLICATE KEY UPDATE
+                open_price = VALUES(open_price),
+                high_price = VALUES(high_price),
+                low_price = VALUES(low_price),
                 close_price = VALUES(close_price),
+                volume = VALUES(volume),
                 currency = VALUES(currency),
                 source = VALUES(source),
                 fetched_at = NOW()
@@ -113,7 +121,11 @@ class InstrumentPriceDailyRepository
             'user_id' => $user_id,
             'instrument_id' => $data['instrument_id'],
             'price_date' => $data['price_date'],
+            'open_price' => $data['open_price'] ?? null,
+            'high_price' => $data['high_price'] ?? null,
+            'low_price' => $data['low_price'] ?? null,
             'close_price' => $data['close_price'],
+            'volume' => $data['volume'] ?? null,
             'currency' => $data['currency'],
             'source' => $data['source'],
         ]);
