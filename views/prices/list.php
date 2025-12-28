@@ -49,13 +49,18 @@ if ($update_5days_result !== null) {
     $rows_upserted = $update_5days_result['rows_upserted'] ?? 0;
     $duration = $update_5days_result['duration'] ?? 0;
     $errors = $update_5days_result['errors'] ?? [];
+    $min_date = $update_5days_result['min_date'] ?? null;
+    $max_date = $update_5days_result['max_date'] ?? null;
     ?>
     <div class="error" style="background-color: #efe; border-color: #cec; color: #060;">
-        <h3>Last 5 days update completed</h3>
+        <h3>Last 5 daily bars update completed</h3>
         <p><strong>Symbols updated:</strong> <?= (int)$symbols_updated ?> | 
            <strong>Symbols failed:</strong> <?= (int)$symbols_failed ?> | 
            <strong>Rows upserted:</strong> <?= (int)$rows_upserted ?> | 
            <strong>Duration:</strong> <?= number_format($duration, 2) ?> seconds</p>
+        <?php if ($min_date !== null && $max_date !== null): ?>
+            <p><strong>Fetched date range:</strong> <?= htmlspecialchars($min_date) ?> → <?= htmlspecialchars($max_date) ?></p>
+        <?php endif; ?>
         <?php if (!empty($errors)): ?>
             <h4>Errors:</h4>
             <ul>

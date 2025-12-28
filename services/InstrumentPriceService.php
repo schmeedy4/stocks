@@ -129,6 +129,8 @@ class InstrumentPriceService
         $symbols_failed = 0;
         $rows_upserted = 0;
         $errors = [];
+        $min_date = null;
+        $max_date = null;
 
         foreach ($instruments_with_qty as $item) {
             $instrument_id = $item['instrument_id'];
@@ -157,9 +159,19 @@ class InstrumentPriceService
                         continue; // Skip invalid rows
                     }
 
+                    $datetime = $value['datetime'];
+                    
+                    // Track min and max datetime
+                    if ($min_date === null || $datetime < $min_date) {
+                        $min_date = $datetime;
+                    }
+                    if ($max_date === null || $datetime > $max_date) {
+                        $max_date = $datetime;
+                    }
+
                     $this->price_repo->upsert($user_id, [
                         'instrument_id' => $instrument_id,
-                        'price_date' => $value['datetime'],
+                        'price_date' => $datetime,
                         'open_price' => isset($value['open']) ? (string) $value['open'] : null,
                         'high_price' => isset($value['high']) ? (string) $value['high'] : null,
                         'low_price' => isset($value['low']) ? (string) $value['low'] : null,
@@ -189,6 +201,8 @@ class InstrumentPriceService
             'symbols_failed' => $symbols_failed,
             'rows_upserted' => $rows_upserted,
             'errors' => $errors,
+            'min_date' => $min_date,
+            'max_date' => $max_date,
         ];
     }
 
