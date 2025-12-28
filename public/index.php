@@ -269,6 +269,20 @@ switch ($action) {
         $controller->apply_split_post();
         break;
 
+    case 'prices':
+        $controller = new PriceController();
+        $controller->list();
+        break;
+
+    case 'price_update':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=prices');
+            exit;
+        }
+        $controller = new PriceController();
+        $controller->update_prices_post();
+        break;
+
     default:
         header('Location: ?action=login');
         exit;

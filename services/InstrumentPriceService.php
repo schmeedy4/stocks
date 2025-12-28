@@ -1,0 +1,186 @@
+<?php
+
+declare(strict_types=1);
+
+class InstrumentPriceService
+{
+    private InstrumentPriceDailyRepository $price_repo;
+    private TradeLotRepository $lot_repo;
+    private InstrumentRepository $instrument_repo;
+    private string $api_key;
+
+    public function __construct()
+    {
+        $this->price_repo = new InstrumentPriceDailyRepository();
+        $this->lot_repo = new TradeLotRepository();
+        $this->instrument_repo = new InstrumentRepository();
+        
+        $config = require __DIR__ . '/../config/config.php';
+        $this->api_key = $config['twelvedata']['api_key'] ?? '';
+    }
+
+    /**
+     * Get list of instruments with open positions for the user.
+     * Returns array of ['instrument' => Instrument, 'latest_price' => InstrumentPriceDaily|null]
+     */
+    public function list_portfolio_instruments(int $user_id): array
+    {
+        // Get instruments with open positions
+        $instruments_with_qty = $this->lot_repo->get_instruments_with_availability($user_id, null, null, false);
+        
+        $result = [];
+        foreach ($instruments_with_qty as $item) {
+            $instrument = $this->instrument_repo->find_by_id($item['instrument_id']);
+            if ($instrument === null) {
+                continue;
+            }
+
+            $latest_price = $this->price_repo->get_latest_price($user_id, $instrument->id);
+            
+            $result[] = [
+                'instrument' => $instrument,
+                'latest_price' => $latest_price,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Update prices for portfolio instruments.
+     * Returns array with counts: ['updated' => int, 'skipped' => int, 'failed' => int, 'errors' => array]
+     */
+    public function update_prices(int $user_id, string $price_date, bool $force_update = false): array
+    {
+        $instruments_with_qty = $this->lot_repo->get_instruments_with_availability($user_id, null, null, false);
+        
+        $updated = 0;
+        $skipped = 0;
+        $failed = 0;
+        $errors = [];
+
+        foreach ($instruments_with_qty as $item) {
+            $instrument_id = $item['instrument_id'];
+            $instrument = $this->instrument_repo->find_by_id($instrument_id);
+            
+            if ($instrument === null || $instrument->ticker === null || $instrument->ticker === '') {
+                $failed++;
+                $errors[] = "Instrument ID {$instrument_id}: No ticker symbol";
+                continue;
+            }
+
+            // Check if price already exists for this date
+            if (!$force_update) {
+                $existing = $this->price_repo->find_by_date($user_id, $instrument_id, $price_date);
+                if ($existing !== null) {
+                    $skipped++;
+                    continue;
+                }
+            }
+
+            // Fetch price from API
+            try {
+                $price_data = $this->fetch_price_from_api($instrument->ticker);
+                
+                if ($price_data === null) {
+                    $failed++;
+                    $errors[] = "{$instrument->ticker}: Failed to fetch price from API";
+                    continue;
+                }
+
+                // Store price
+                $this->price_repo->create($user_id, [
+                    'instrument_id' => $instrument_id,
+                    'price_date' => $price_date,
+                    'close_price' => $price_data['close_price'],
+                    'currency' => $price_data['currency'],
+                    'source' => 'twelvedata',
+                ]);
+
+                $updated++;
+
+                // Throttle: sleep ~8 seconds between API calls (8 requests/min limit)
+                sleep(8);
+
+            } catch (\Exception $e) {
+                $failed++;
+                $errors[] = "{$instrument->ticker}: " . $e->getMessage();
+                // Continue to next instrument
+            }
+        }
+
+        return [
+            'updated' => $updated,
+            'skipped' => $skipped,
+            'failed' => $failed,
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * Fetch latest price from Twelve Data API.
+     * Returns array ['close_price' => string, 'currency' => string] or null on error.
+     */
+    private function fetch_price_from_api(string $symbol): ?array
+    {
+        if ($this->api_key === '') {
+            throw new \RuntimeException('Twelve Data API key not configured');
+        }
+
+        $url = "https://api.twelvedata.com/time_series?apikey={$this->api_key}&symbol={$symbol}&interval=1day&outputsize=1";
+        
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            // Disable SSL verification for local development (WAMP/XAMPP environments)
+            // In production, configure proper CA certificate bundle instead
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+        ]);
+
+        $response = curl_exec($curl);
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($curl);
+        curl_close($curl);
+
+        if ($curl_error !== '') {
+            throw new \RuntimeException("cURL error: {$curl_error}");
+        }
+
+        if ($http_code !== 200) {
+            throw new \RuntimeException("HTTP error: {$http_code}");
+        }
+
+        $data = json_decode($response, true);
+        
+        if (!is_array($data) || !isset($data['status']) || $data['status'] !== 'ok') {
+            throw new \RuntimeException('API returned error status');
+        }
+
+        if (!isset($data['values']) || !is_array($data['values']) || empty($data['values'])) {
+            throw new \RuntimeException('No price data in API response');
+        }
+
+        // Get the first (latest) value
+        $latest = $data['values'][0];
+        
+        if (!isset($latest['close'])) {
+            throw new \RuntimeException('Missing close price in API response');
+        }
+
+        $currency = $data['meta']['currency'] ?? 'USD';
+
+        return [
+            'close_price' => (string) $latest['close'],
+            'currency' => $currency,
+        ];
+    }
+}
+

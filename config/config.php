@@ -12,4 +12,7 @@ return [
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ],
     ],
+    'twelvedata' => [
+        'api_key' => '0897fcea7769402ea8fbdb15debd650e',
+    ],
 ];
