@@ -274,6 +274,11 @@ switch ($action) {
         $controller->list();
         break;
 
+    case 'holdings':
+        $controller = new HoldingsController();
+        $controller->list();
+        break;
+
     case 'price_update':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ?action=prices');

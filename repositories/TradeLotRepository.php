@@ -310,5 +310,41 @@ class TradeLotRepository
             'qty_remaining' => $qty_remaining,
         ]);
     }
+
+    /**
+     * Get all open lots for a user, grouped by instrument_id.
+     * Returns array with instrument_id as key, array of TradeLot objects as value.
+     */
+    public function get_all_open_lots_grouped_by_instrument(int $user_id): array
+    {
+        $stmt = $this->db->prepare('
+            SELECT id, user_id, buy_trade_id, instrument_id, opened_date,
+                   quantity_opened, quantity_remaining, cost_basis_eur
+            FROM trade_lot
+            WHERE user_id = :user_id AND quantity_remaining > 0
+            ORDER BY instrument_id, opened_date ASC, id ASC
+        ');
+        $stmt->execute(['user_id' => $user_id]);
+
+        $grouped = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $instrument_id = (int) $row['instrument_id'];
+            if (!isset($grouped[$instrument_id])) {
+                $grouped[$instrument_id] = [];
+            }
+            $grouped[$instrument_id][] = new TradeLot(
+                (int) $row['id'],
+                (int) $row['user_id'],
+                (int) $row['buy_trade_id'],
+                (int) $row['instrument_id'],
+                $row['opened_date'],
+                $row['quantity_opened'],
+                $row['quantity_remaining'],
+                $row['cost_basis_eur']
+            );
+        }
+
+        return $grouped;
+    }
 }
 

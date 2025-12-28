@@ -72,6 +72,60 @@ class InstrumentPriceDailyRepository
         );
     }
 
+    /**
+     * Get latest and previous price bars for an instrument.
+     * Returns array with 'latest' and 'previous' keys (both can be null).
+     */
+    public function get_latest_and_previous_price(int $user_id, int $instrument_id): array
+    {
+        $stmt = $this->db->prepare('
+            SELECT id, user_id, instrument_id, price_date, close_price, currency, source, fetched_at
+            FROM instrument_price_daily
+            WHERE user_id = :user_id AND instrument_id = :instrument_id
+            ORDER BY price_date DESC, fetched_at DESC
+            LIMIT 2
+        ');
+        $stmt->execute([
+            'user_id' => $user_id,
+            'instrument_id' => $instrument_id,
+        ]);
+        $rows = $stmt->fetchAll();
+
+        $latest = null;
+        $previous = null;
+
+        if (!empty($rows)) {
+            $latest = new InstrumentPriceDaily(
+                (int) $rows[0]['id'],
+                (int) $rows[0]['user_id'],
+                (int) $rows[0]['instrument_id'],
+                $rows[0]['price_date'],
+                $rows[0]['close_price'],
+                $rows[0]['currency'],
+                $rows[0]['source'],
+                $rows[0]['fetched_at']
+            );
+        }
+
+        if (isset($rows[1])) {
+            $previous = new InstrumentPriceDaily(
+                (int) $rows[1]['id'],
+                (int) $rows[1]['user_id'],
+                (int) $rows[1]['instrument_id'],
+                $rows[1]['price_date'],
+                $rows[1]['close_price'],
+                $rows[1]['currency'],
+                $rows[1]['source'],
+                $rows[1]['fetched_at']
+            );
+        }
+
+        return [
+            'latest' => $latest,
+            'previous' => $previous,
+        ];
+    }
+
     public function create(int $user_id, array $data): int
     {
         $stmt = $this->db->prepare('

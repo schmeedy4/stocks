@@ -36,6 +36,7 @@
             <a href="?action=payers">Payers</a> |
             <a href="?action=dividends">Dividends</a> |
             <a href="?action=prices">Prices</a> |
+            <a href="?action=holdings">Holdings</a> |
             <a href="?action=logout">Logout</a>
         </nav>
         <hr>
