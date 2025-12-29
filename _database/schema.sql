@@ -369,3 +369,49 @@ CREATE TABLE instrument_price_latest (
   CONSTRAINT fk_latest_user FOREIGN KEY (user_id) REFERENCES user(id),
   CONSTRAINT fk_latest_instr FOREIGN KEY (instrument_id) REFERENCES instrument(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- 12) news_article (news articles for instruments)
+-- -----------------------------
+CREATE TABLE news_article (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+  -- Source & identity
+  source VARCHAR(64) NOT NULL,
+  url TEXT NOT NULL,
+  url_hash BINARY(32) NOT NULL,
+  title VARCHAR(512) NOT NULL,
+
+  -- Timing
+  published_at DATETIME NULL,
+  captured_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  -- Author
+  author_name VARCHAR(255) NULL,
+  author_url TEXT NULL,
+  author_followers INT UNSIGNED NULL,
+
+  -- Analysis results
+  sentiment ENUM('bullish','bearish','neutral','mixed') NOT NULL,
+  confidence TINYINT UNSIGNED NOT NULL,
+  read_grade TINYINT UNSIGNED NOT NULL,
+  tickers JSON NOT NULL,
+
+  -- Structured analysis
+  drivers JSON NOT NULL,
+  key_dates JSON NOT NULL,
+  tags JSON NOT NULL,
+  recap TEXT NOT NULL,
+
+  -- Full original JSON (for reprocessing / audits)
+  raw_json JSON NOT NULL,
+
+  -- Indexes & constraints
+  UNIQUE KEY uq_source_urlhash (source, url_hash),
+  KEY idx_sentiment (sentiment),
+  KEY idx_read_grade (read_grade),
+  KEY idx_published_at (published_at),
+  KEY idx_author_name (author_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

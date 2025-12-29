@@ -297,6 +297,30 @@ switch ($action) {
         $controller->update_last_5_days_post();
         break;
 
+    case 'news':
+        $controller = new NewsController();
+        $controller->list();
+        break;
+
+    case 'news_import':
+        $controller = new NewsController();
+        $controller->import();
+        break;
+
+    case 'news_import_post':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=news_import');
+            exit;
+        }
+        $controller = new NewsController();
+        $controller->import_post();
+        break;
+
+    case 'news_get_json':
+        $controller = new NewsController();
+        $controller->get_json();
+        break;
+
     default:
         header('Location: ?action=login');
         exit;

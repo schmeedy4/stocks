@@ -72,6 +72,9 @@
                         <a href="?action=corporate_actions" class="<?= get_link_classes('corporate_actions', $current_action) ?>">
                             Corporate Actions
                         </a>
+                        <a href="?action=news" class="<?= get_link_classes('news', $current_action) ?>">
+                            News
+                        </a>
                         <div class="pt-4 mt-4 border-t border-gray-200">
                             <a href="?action=logout" class="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md transition-colors">
                                 Logout
@@ -83,7 +86,7 @@
             
             <!-- Main Content -->
             <main class="flex-1 overflow-x-hidden">
-                <div class="<?= $current_action === 'holdings' ? '' : 'max-w-7xl mx-auto' ?> px-6 py-8">
+                <div class="<?= $current_action === 'holdings' ? '' : ($current_action === 'news' ? 'max-w-12xl mx-auto' : 'max-w-7xl mx-auto') ?> px-6 py-8">
                     <?php if (isset($content)): ?>
                         <?= $content ?>
                     <?php endif; ?>

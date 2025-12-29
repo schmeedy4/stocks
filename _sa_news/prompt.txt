@@ -3,9 +3,20 @@ Do NOT include markdown, comments, or explanations.
 
 Schema:
 {
+  "source": "<string>",
+  "url": "<string>",
+  "tickers": ["<ticker>", "..."],
+  "title": "<string>",
+  "published_at": "<string or null>",
+  "captured_at": "<string>",
+  "author_name": "<string or null>",
+  "author_url": "<string or null>",
+  "author_followers": "<integer or null>",
+
   "sentiment": "bullish|bearish|neutral|mixed",
   "confidence": <integer 0-100>,
   "read_grade": <integer 1-5>,
+
   "drivers": [
     {
       "direction": "bullish|bearish|neutral",
@@ -15,6 +26,7 @@ Schema:
       "evidence": ["<short evidence from input>", "..."]
     }
   ],
+
   "key_dates": [
     {
       "date": "YYYY-MM-DD",
@@ -24,12 +36,16 @@ Schema:
       "tickers": ["<ticker>", "..."]
     }
   ],
+
   "tags": ["<3-8 tags>"],
   "recap": "<max 100 words>"
 }
 
 Instructions:
 - Use ONLY the provided input JSON.
+- Copy through the following fields exactly from the input (do not modify values):
+  - source, url, tickers, title, published_at, captured_at, author_name, author_url, author_followers
+- If any of those fields are missing in the input, return null for that field (except captured_at/url/source/title which should usually exist).
 - If article_text is null or missing, rely on snippet and summary_bullets.
 - Sentiment definitions:
   - bullish: likely positive impact
@@ -47,8 +63,8 @@ Instructions:
   - 0: unclear/descriptive
 - key_dates:
   - Include ONLY explicitly stated dates.
-  - Do NOT infer or guess.
-  - Horizon:
+  - Do NOT infer or guess dates.
+  - Horizon rules (relative to published_at; if published_at missing, use captured_at):
     - near_term: ≤ 90 days
     - mid_term: > 90 days and ≤ 18 months
     - long_term: > 18 months
@@ -58,8 +74,8 @@ Instructions:
   - 3: decent, confirms known info
   - 2: weak, low signal
   - 1: skip, fluff or no insight
-- tags: 3–8 concise snake_case tags
-- recap: max 100 words, neutral tone
+- tags: 3–8 concise lowercase snake_case tags
+- recap: max 100 words, neutral tone, no recommendations
 
 Input JSON:
 {{NEWS_JSON}}

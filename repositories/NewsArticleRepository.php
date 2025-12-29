@@ -1,0 +1,271 @@
+<?php
+
+declare(strict_types=1);
+
+class NewsArticleRepository
+{
+    private PDO $db;
+
+    public function __construct()
+    {
+        $this->db = Database::get_connection();
+    }
+
+    /**
+     * Search news articles with filters and pagination
+     * @return array{items: array, total: int}
+     */
+    public function search(
+        ?string $ticker = null,
+        ?string $sentiment = null,
+        ?int $min_confidence = null,
+        ?int $min_read_grade = null,
+        string $sort = 'captured_desc',
+        int $page = 1,
+        int $limit = 25
+    ): array {
+        $offset = ($page - 1) * $limit;
+
+        $sql = 'SELECT 
+            id, source, url, url_hash, title, 
+            published_at, captured_at, created_at,
+            author_name, author_url, author_followers,
+            sentiment, confidence, read_grade,
+            tickers, drivers, key_dates, tags, recap, raw_json
+        FROM news_article
+        WHERE 1=1';
+
+        $params = [];
+
+        // Filter by ticker (search in tickers JSON column)
+        if ($ticker !== null && $ticker !== '') {
+            $sql .= ' AND JSON_SEARCH(tickers, "one", :ticker, NULL, "$[*]") IS NOT NULL';
+            $params['ticker'] = strtoupper(trim($ticker));
+        }
+
+        // Filter by sentiment
+        if ($sentiment !== null && $sentiment !== '' && $sentiment !== 'all') {
+            $sql .= ' AND sentiment = :sentiment';
+            $params['sentiment'] = $sentiment;
+        }
+
+        // Filter by min confidence
+        if ($min_confidence !== null) {
+            $sql .= ' AND confidence >= :min_confidence';
+            $params['min_confidence'] = $min_confidence;
+        }
+
+        // Filter by min read grade
+        if ($min_read_grade !== null) {
+            $sql .= ' AND read_grade >= :min_read_grade';
+            $params['min_read_grade'] = $min_read_grade;
+        }
+
+        // Sort
+        switch ($sort) {
+            case 'published_desc':
+                $sql .= ' ORDER BY published_at DESC, captured_at DESC';
+                break;
+            case 'confidence_desc':
+                $sql .= ' ORDER BY confidence DESC, captured_at DESC';
+                break;
+            case 'read_grade_desc':
+                $sql .= ' ORDER BY read_grade DESC, confidence DESC, captured_at DESC';
+                break;
+            case 'captured_desc':
+            default:
+                $sql .= ' ORDER BY captured_at DESC';
+                break;
+        }
+
+        // Pagination
+        $sql .= ' LIMIT :limit OFFSET :offset';
+        $params['limit'] = $limit;
+        $params['offset'] = $offset;
+
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            if ($key === 'limit' || $key === 'offset') {
+                $stmt->bindValue(':' . $key, $value, PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue(':' . $key, $value);
+            }
+        }
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $items = [];
+        foreach ($rows as $row) {
+            $items[] = new NewsArticle(
+                (int) $row['id'],
+                $row['source'],
+                $row['url'],
+                $row['title'],
+                $row['published_at'],
+                $row['captured_at'],
+                $row['created_at'],
+                $row['author_name'],
+                $row['author_url'],
+                $row['author_followers'] ? (int) $row['author_followers'] : null,
+                $row['sentiment'],
+                (int) $row['confidence'],
+                (int) $row['read_grade'],
+                json_decode($row['tickers'], true) ?? [],
+                json_decode($row['drivers'], true) ?? [],
+                json_decode($row['key_dates'], true) ?? [],
+                json_decode($row['tags'], true) ?? [],
+                $row['recap'],
+                json_decode($row['raw_json'], true) ?? []
+            );
+        }
+
+        // Get total count
+        $count_sql = 'SELECT COUNT(*) as total FROM news_article WHERE 1=1';
+        $count_params = [];
+        if ($ticker !== null && $ticker !== '') {
+            $count_sql .= ' AND JSON_SEARCH(tickers, "one", :ticker, NULL, "$[*]") IS NOT NULL';
+            $count_params['ticker'] = strtoupper(trim($ticker));
+        }
+        if ($sentiment !== null && $sentiment !== '' && $sentiment !== 'all') {
+            $count_sql .= ' AND sentiment = :sentiment';
+            $count_params['sentiment'] = $sentiment;
+        }
+        if ($min_confidence !== null) {
+            $count_sql .= ' AND confidence >= :min_confidence';
+            $count_params['min_confidence'] = $min_confidence;
+        }
+        if ($min_read_grade !== null) {
+            $count_sql .= ' AND read_grade >= :min_read_grade';
+            $count_params['min_read_grade'] = $min_read_grade;
+        }
+
+        $count_stmt = $this->db->prepare($count_sql);
+        foreach ($count_params as $key => $value) {
+            $count_stmt->bindValue(':' . $key, $value);
+        }
+        $count_stmt->execute();
+        $count_row = $count_stmt->fetch(PDO::FETCH_ASSOC);
+        $total = (int) ($count_row['total'] ?? 0);
+
+        return ['items' => $items, 'total' => $total];
+    }
+
+    public function find_by_id(int $id): ?NewsArticle
+    {
+        $stmt = $this->db->prepare('
+            SELECT 
+                id, source, url, url_hash, title, 
+                published_at, captured_at, created_at,
+                author_name, author_url, author_followers,
+                sentiment, confidence, read_grade,
+                tickers, drivers, key_dates, tags, recap, raw_json
+            FROM news_article
+            WHERE id = :id
+        ');
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($row === false) {
+            return null;
+        }
+
+        return new NewsArticle(
+            (int) $row['id'],
+            $row['source'],
+            $row['url'],
+            $row['title'],
+            $row['published_at'],
+            $row['captured_at'],
+            $row['created_at'],
+            $row['author_name'],
+            $row['author_url'],
+            $row['author_followers'] ? (int) $row['author_followers'] : null,
+            $row['sentiment'],
+            (int) $row['confidence'],
+            (int) $row['read_grade'],
+            json_decode($row['tickers'], true) ?? [],
+            json_decode($row['drivers'], true) ?? [],
+            json_decode($row['key_dates'], true) ?? [],
+            json_decode($row['tags'], true) ?? [],
+            $row['recap'],
+            json_decode($row['raw_json'], true) ?? []
+        );
+    }
+
+    public function create_or_update(array $data): int
+    {
+        // Calculate URL hash in PHP to avoid parameter reuse issue
+        $url_hash = hex2bin(hash('sha256', $data['url']));
+
+        $stmt = $this->db->prepare('
+            INSERT INTO news_article (
+                source, url, url_hash, title,
+                published_at, captured_at,
+                author_name, author_url, author_followers,
+                sentiment, confidence, read_grade,
+                tickers, drivers, key_dates, tags, recap, raw_json
+            ) VALUES (
+                :source, :url, :url_hash, :title,
+                :published_at, :captured_at,
+                :author_name, :author_url, :author_followers,
+                :sentiment, :confidence, :read_grade,
+                :tickers, :drivers, :key_dates, :tags, :recap, :raw_json
+            )
+            ON DUPLICATE KEY UPDATE
+                title = VALUES(title),
+                published_at = VALUES(published_at),
+                captured_at = VALUES(captured_at),
+                author_name = VALUES(author_name),
+                author_url = VALUES(author_url),
+                author_followers = VALUES(author_followers),
+                sentiment = VALUES(sentiment),
+                confidence = VALUES(confidence),
+                read_grade = VALUES(read_grade),
+                tickers = VALUES(tickers),
+                drivers = VALUES(drivers),
+                key_dates = VALUES(key_dates),
+                tags = VALUES(tags),
+                recap = VALUES(recap),
+                raw_json = VALUES(raw_json)
+        ');
+
+        $stmt->execute([
+            'source' => $data['source'],
+            'url' => $data['url'],
+            'url_hash' => $url_hash,
+            'title' => $data['title'],
+            'published_at' => $data['published_at'] ?? null,
+            'captured_at' => $data['captured_at'],
+            'author_name' => $data['author_name'] ?? null,
+            'author_url' => $data['author_url'] ?? null,
+            'author_followers' => $data['author_followers'] ?? null,
+            'sentiment' => $data['sentiment'],
+            'confidence' => $data['confidence'],
+            'read_grade' => $data['read_grade'],
+            'tickers' => json_encode($data['tickers'] ?? []),
+            'drivers' => json_encode($data['drivers']),
+            'key_dates' => json_encode($data['key_dates']),
+            'tags' => json_encode($data['tags']),
+            'recap' => $data['recap'],
+            'raw_json' => json_encode($data['raw_json']),
+        ]);
+
+        // If it was an update, we need to find the ID
+        if ($stmt->rowCount() === 0) {
+            // It was an update, find the ID by url_hash
+            $find_stmt = $this->db->prepare('
+                SELECT id FROM news_article 
+                WHERE source = :source AND url_hash = :url_hash
+            ');
+            $find_stmt->execute([
+                'source' => $data['source'],
+                'url_hash' => $url_hash,
+            ]);
+            $row = $find_stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ? (int) $row['id'] : 0;
+        }
+
+        return (int) $this->db->lastInsertId();
+    }
+}
+
