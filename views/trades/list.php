@@ -44,7 +44,7 @@ ob_start();
                         $instrument = $instruments[$trade->instrument_id] ?? null;
                         ?>
                         <tr class="<?= $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' ?> hover:bg-blue-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($trade->trade_date) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= date('d.m.Y', strtotime($trade->trade_date)) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full <?= $trade->trade_type === 'BUY' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' ?>">
                                     <?= htmlspecialchars($trade->trade_type) ?>
@@ -57,10 +57,10 @@ ob_start();
                                     ID: <?= htmlspecialchars((string)$trade->instrument_id) ?>
                                 <?php endif; ?>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->quantity) ?></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->price_per_unit) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= number_format((float)$trade->quantity, 0) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= number_format((float)$trade->price_per_unit, 2) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($trade->trade_currency) ?></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->price_eur) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= number_format((float)$trade->price_eur, 2) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->total_value_eur) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->fee_eur) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">

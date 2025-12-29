@@ -125,14 +125,14 @@ if ($update_5days_result !== null) {
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <?php if ($latest_price !== null): ?>
-                                    <?= htmlspecialchars($latest_price->price_date) ?>
+                                    <?= date('d.m.Y', strtotime($latest_price->price_date)) ?>
                                 <?php else: ?>
                                     <em class="text-gray-400">No price data</em>
                                 <?php endif; ?>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                                 <?php if ($latest_price !== null): ?>
-                                    <?= htmlspecialchars($latest_price->close_price) ?>
+                                    <?= number_format((float)$latest_price->close_price, 2) ?>
                                 <?php else: ?>
                                     <em class="text-gray-400">-</em>
                                 <?php endif; ?>
@@ -146,7 +146,7 @@ if ($update_5days_result !== null) {
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                 <?php if ($latest_price !== null): ?>
-                                    <?= htmlspecialchars($latest_price->fetched_at) ?>
+                                    <?= date('H:i:s d.m.Y', strtotime($latest_price->fetched_at)) ?>
                                 <?php else: ?>
                                     <em class="text-gray-400">-</em>
                                 <?php endif; ?>

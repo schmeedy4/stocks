@@ -82,7 +82,7 @@ ob_start();
                             $tax_totals = $sell_tax_totals[$trade->id] ?? null;
                             ?>
                             <tr class="<?= $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' ?> hover:bg-blue-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($trade->trade_date) ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= date('d.m.Y', strtotime($trade->trade_date)) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <?php if ($instrument): ?>
                                         <?= htmlspecialchars($instrument->ticker ? $instrument->ticker . ' - ' . $instrument->name : $instrument->name) ?>
@@ -90,7 +90,7 @@ ob_start();
                                         ID: <?= htmlspecialchars((string)$trade->instrument_id) ?>
                                     <?php endif; ?>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->quantity) ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= number_format((float)$trade->quantity, 0) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($tax_totals['total_sell_proceeds_eur'] ?? '0.00') ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($tax_totals['total_buy_cost_eur'] ?? '0.00') ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($tax_totals['total_gain_eur'] ?? '0.00') ?></td>

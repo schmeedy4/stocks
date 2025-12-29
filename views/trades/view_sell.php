@@ -20,7 +20,7 @@ ob_start();
             <tbody class="bg-white divide-y divide-gray-200">
                 <tr>
                     <th class="px-6 py-4 text-left text-sm font-medium text-gray-900 w-48">Date</th>
-                    <td class="px-6 py-4 text-sm text-gray-700"><?= htmlspecialchars($trade->trade_date) ?></td>
+                    <td class="px-6 py-4 text-sm text-gray-700"><?= date('d.m.Y', strtotime($trade->trade_date)) ?></td>
                 </tr>
                 <tr class="bg-gray-50">
                     <th class="px-6 py-4 text-left text-sm font-medium text-gray-900">Instrument</th>
@@ -34,15 +34,15 @@ ob_start();
                 </tr>
                 <tr>
                     <th class="px-6 py-4 text-left text-sm font-medium text-gray-900">Quantity</th>
-                    <td class="px-6 py-4 text-sm text-gray-700"><?= htmlspecialchars($trade->quantity) ?></td>
+                    <td class="px-6 py-4 text-sm text-gray-700"><?= number_format((float)$trade->quantity, 0) ?></td>
                 </tr>
                 <tr class="bg-gray-50">
                     <th class="px-6 py-4 text-left text-sm font-medium text-gray-900">Price per Unit</th>
-                    <td class="px-6 py-4 text-sm text-gray-700"><?= htmlspecialchars($trade->price_per_unit) ?> <?= htmlspecialchars($trade->trade_currency) ?></td>
+                    <td class="px-6 py-4 text-sm text-gray-700"><?= number_format((float)$trade->price_per_unit, 2) ?> <?= htmlspecialchars($trade->trade_currency) ?></td>
                 </tr>
                 <tr>
                     <th class="px-6 py-4 text-left text-sm font-medium text-gray-900">Price EUR</th>
-                    <td class="px-6 py-4 text-sm text-gray-700"><?= htmlspecialchars($trade->price_eur) ?> EUR</td>
+                    <td class="px-6 py-4 text-sm text-gray-700"><?= number_format((float)$trade->price_eur, 2) ?> EUR</td>
                 </tr>
                 <tr class="bg-gray-50">
                     <th class="px-6 py-4 text-left text-sm font-medium text-gray-900">Total Value EUR</th>
@@ -103,8 +103,8 @@ ob_start();
                             $lot_opened_date = $alloc_data['lot_opened_date'];
                             ?>
                             <tr class="<?= $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' ?> hover:bg-blue-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($lot_opened_date) ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($alloc->quantity_consumed) ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= date('d.m.Y', strtotime($lot_opened_date)) ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= number_format((float)$alloc->quantity_consumed, 0) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($alloc->proceeds_eur) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($alloc->cost_basis_eur) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium <?= compare_decimals_view($alloc->realized_pnl_eur, '0') >= 0 ? 'text-green-600' : 'text-red-600' ?>">
