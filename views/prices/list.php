@@ -76,20 +76,8 @@ if ($update_5days_result !== null) {
 }
 ?>
 
-<div class="mb-6 flex gap-4">
-    <form method="POST" action="?action=price_update" class="bg-white rounded-lg shadow p-4">
-        <div class="mb-3">
-            <label class="flex items-center">
-                <input type="checkbox" name="force_update" value="1" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                <span class="ml-2 text-sm text-gray-700">Force update (ignore existing prices for today)</span>
-            </label>
-        </div>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
-            Update prices (today)
-        </button>
-    </form>
-
-    <form method="POST" action="?action=price_update_5days" class="bg-white rounded-lg shadow p-4">
+<div class="mb-6">
+    <form method="POST" action="?action=price_update_5days" class="bg-white rounded-lg shadow p-4 inline-block">
         <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
             Update last 5 days
         </button>
