@@ -12,6 +12,7 @@ ob_start();
 </div>
 
 <form method="GET" action="?action=dividends" class="mb-6 flex items-center gap-3">
+    <input type="hidden" name="action" value="dividends">
     <label for="year" class="text-sm font-medium text-gray-700">Year:</label>
     <select id="year" name="year" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
         <?php for ($y = date('Y'); $y >= 2020; $y--): ?>
@@ -38,6 +39,7 @@ ob_start();
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Foreign Tax EUR</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source Country</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Documents</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -64,6 +66,18 @@ ob_start();
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= $dividend->foreign_tax_eur !== null ? htmlspecialchars($dividend->foreign_tax_eur) : '-' ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($dividend->source_country_code) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($dividend->dividend_type_code) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                                <?php 
+                                $doc_count = $document_counts[$dividend->id] ?? 0;
+                                if ($doc_count > 0): 
+                                ?>
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        <?= $doc_count ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-gray-400">—</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full <?= $dividend->is_voided ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800' ?>">
                                     <?= $dividend->is_voided ? 'Voided' : 'Active' ?>

@@ -35,6 +35,7 @@ ob_start();
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price EUR</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total EUR</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Fee EUR</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Documents</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
@@ -63,6 +64,18 @@ ob_start();
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= number_format((float)$trade->price_eur, 2) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->total_value_eur) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right"><?= htmlspecialchars($trade->fee_eur) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                                <?php 
+                                $doc_count = $document_counts[$trade->id] ?? 0;
+                                if ($doc_count > 0): 
+                                ?>
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        <?= $doc_count ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-gray-400">—</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <a href="?action=trade_edit&id=<?= $trade->id ?>" class="text-blue-600 hover:text-blue-900">Edit</a>
                                 <?php if ($trade->trade_type === 'SELL'): ?>

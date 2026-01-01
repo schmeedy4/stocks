@@ -86,7 +86,7 @@
             
             <!-- Main Content -->
             <main class="flex-1 overflow-x-hidden">
-                <div class="<?= $current_action === 'holdings' ? '' : ($current_action === 'news' ? 'max-w-12xl mx-auto' : 'max-w-7xl mx-auto') ?> px-6 py-8">
+                <div class="<?= $current_action === 'holdings' ? '' : (in_array($current_action, ['news', 'trades', 'dividends']) ? 'max-w-12xl mx-auto' : 'max-w-7xl mx-auto') ?> px-6 py-8">
                     <?php if (isset($content)): ?>
                         <?= $content ?>
                     <?php endif; ?>

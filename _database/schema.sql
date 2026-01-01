@@ -415,3 +415,99 @@ CREATE TABLE news_article (
   KEY idx_author_name (author_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- -----------------------------
+-- 13) document (documents for user)
+-- -----------------------------
+CREATE TABLE document (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+  user_id BIGINT UNSIGNED NOT NULL,
+
+  -- What this document is intended for
+  document_kind ENUM(
+    'TRADES',
+    'DIVIDENDS',
+    'BUY_TRADES',
+    'SELL_TRADES',
+    'MIXED',
+    'OTHER'
+  ) NOT NULL,
+
+  broker_code VARCHAR(50) NULL,           -- REVOLUT, IBKR, etc (optional)
+  statement_period_from DATE NULL,
+  statement_period_to DATE NULL,
+
+  -- File info
+  original_filename VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(120) NOT NULL,
+  file_size_bytes BIGINT UNSIGNED NOT NULL,
+
+  storage_disk ENUM('LOCAL','S3') NOT NULL DEFAULT 'LOCAL',
+  storage_path VARCHAR(1024) NOT NULL,
+
+  sha256 CHAR(64) NOT NULL,                -- dedupe + integrity check
+
+  -- Parsing / assistance lifecycle
+  parse_status ENUM(
+    'UPLOADED',
+    'READY_FOR_REVIEW',
+    'PARTIALLY_REVIEWED',
+    'POSTED',
+    'ERROR'
+  ) NOT NULL DEFAULT 'UPLOADED',
+
+  parse_error VARCHAR(1024) NULL,
+
+  -- Parsed content (assist-only, never blindly trusted)
+  extracted_data JSON NULL,                -- parsed rows, OCR output, CSV rows, etc
+  extraction_notes VARCHAR(1024) NULL,     -- warnings, ambiguities, hints
+
+  -- Provenance: what this document created
+  created_trade_ids JSON NULL,             -- [123,124,...]
+  created_dividend_ids JSON NULL,          -- [55,56,...]
+
+  notes VARCHAR(1024) NULL,                -- your manual notes
+
+  uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+
+  UNIQUE KEY uniq_user_sha (user_id, sha256),
+  KEY idx_user_kind (user_id, document_kind, uploaded_at),
+  KEY idx_user_status (user_id, parse_status),
+
+  CONSTRAINT fk_document_user
+    FOREIGN KEY (user_id) REFERENCES user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- 14) dividend_document (documents for dividends)
+-- -----------------------------
+CREATE TABLE dividend_document (
+  dividend_id BIGINT UNSIGNED NOT NULL,
+  document_id BIGINT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (dividend_id, document_id),
+
+  CONSTRAINT fk_dd_dividend
+    FOREIGN KEY (dividend_id) REFERENCES dividend(id),
+
+  CONSTRAINT fk_dd_document
+    FOREIGN KEY (document_id) REFERENCES document(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- 15) trade_document (documents for trades)
+-- -----------------------------
+CREATE TABLE trade_document (
+  trade_id BIGINT UNSIGNED NOT NULL,
+  document_id BIGINT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (trade_id, document_id),
+
+  CONSTRAINT fk_td_trade
+    FOREIGN KEY (trade_id) REFERENCES trade(id),
+
+  CONSTRAINT fk_td_document
+    FOREIGN KEY (document_id) REFERENCES document(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

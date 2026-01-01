@@ -7,12 +7,14 @@ class DividendService
     private DividendRepository $dividend_repo;
     private DividendPayerRepository $payer_repo;
     private InstrumentRepository $instrument_repo;
+    private DividendDocumentRepository $dividend_document_repo;
 
     public function __construct()
     {
         $this->dividend_repo = new DividendRepository();
         $this->payer_repo = new DividendPayerRepository();
         $this->instrument_repo = new InstrumentRepository();
+        $this->dividend_document_repo = new DividendDocumentRepository();
     }
 
     public function list(int $user_id, int $year): array
@@ -85,7 +87,24 @@ class DividendService
             'notes' => isset($input['notes']) && $input['notes'] !== '' ? trim($input['notes']) : null,
         ];
 
-        return $this->dividend_repo->create($user_id, $data);
+        $db = Database::get_connection();
+        
+        try {
+            $db->beginTransaction();
+            
+            $dividend_id = $this->dividend_repo->create($user_id, $data);
+
+            // Link documents if provided (after successful dividend creation)
+            if (isset($input['document_ids']) && is_array($input['document_ids'])) {
+                $this->link_documents($user_id, $dividend_id, $input['document_ids']);
+            }
+            
+            $db->commit();
+            return $dividend_id;
+        } catch (\Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
     }
 
     public function update(int $user_id, int $id, array $input): void
@@ -149,7 +168,22 @@ class DividendService
             'notes' => isset($input['notes']) && $input['notes'] !== '' ? trim($input['notes']) : null,
         ];
 
-        $this->dividend_repo->update($user_id, $id, $data);
+        $db = Database::get_connection();
+        
+        try {
+            $db->beginTransaction();
+            
+            $this->dividend_repo->update($user_id, $id, $data);
+
+            // Update document links (always provided in update flow)
+            $document_ids = $input['document_ids'] ?? [];
+            $this->replace_document_links($user_id, $id, $document_ids);
+            
+            $db->commit();
+        } catch (\Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
     }
 
     public function void_toggle(int $user_id, int $id): void
@@ -233,6 +267,58 @@ class DividendService
         }
 
         return $errors;
+    }
+
+    /**
+     * Link documents to a dividend (with ownership validation)
+     */
+    private function link_documents(int $user_id, int $dividend_id, array $document_ids): void
+    {
+        if (empty($document_ids)) {
+            return;
+        }
+
+        $document_repo = new DocumentRepository();
+
+        // Validate all documents belong to user
+        foreach ($document_ids as $doc_id) {
+            $doc = $document_repo->find_by_id($user_id, (int) $doc_id);
+            if ($doc === null) {
+                throw new \Exception('Document not found or does not belong to you');
+            }
+        }
+
+        // Link all documents
+        foreach ($document_ids as $doc_id) {
+            $this->dividend_document_repo->link($dividend_id, (int) $doc_id);
+        }
+    }
+
+    /**
+     * Replace all document links for a dividend (with ownership validation)
+     */
+    private function replace_document_links(int $user_id, int $dividend_id, array $document_ids): void
+    {
+        $document_repo = new DocumentRepository();
+
+        // Validate all documents belong to user
+        foreach ($document_ids as $doc_id) {
+            $doc = $document_repo->find_by_id($user_id, (int) $doc_id);
+            if ($doc === null) {
+                throw new \Exception('Document not found or does not belong to you');
+            }
+        }
+
+        // Replace all links
+        $this->dividend_document_repo->replace_links($dividend_id, array_map('intval', $document_ids));
+    }
+
+    /**
+     * Get all document IDs linked to a dividend
+     */
+    public function get_linked_document_ids(int $dividend_id): array
+    {
+        return $this->dividend_document_repo->get_document_ids($dividend_id);
     }
 }
 

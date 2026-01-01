@@ -255,6 +255,54 @@ switch ($action) {
         $controller->void_post($id);
         break;
 
+    case 'document_download':
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=dividends');
+            exit;
+        }
+        $controller = new DividendController();
+        $controller->download_document($id);
+        break;
+
+    case 'document_delete':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=dividends');
+            exit;
+        }
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=dividends');
+            exit;
+        }
+        $controller = new DividendController();
+        $controller->delete_document($id);
+        break;
+
+    case 'trade_document_download':
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=trades');
+            exit;
+        }
+        $controller = new TradeController();
+        $controller->download_document($id);
+        break;
+
+    case 'trade_document_delete':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=trades');
+            exit;
+        }
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=trades');
+            exit;
+        }
+        $controller = new TradeController();
+        $controller->delete_document($id);
+        break;
+
     case 'corporate_actions':
         $controller = new CorporateActionController();
         $controller->show_split_form();

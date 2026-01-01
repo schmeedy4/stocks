@@ -7,6 +7,7 @@ class TradeController
     private TradeService $trade_service;
     private InstrumentRepository $instrument_repo;
     private BrokerAccountRepository $broker_repo;
+    private DocumentRepository $document_repo;
 
     public function __construct()
     {
@@ -16,6 +17,7 @@ class TradeController
         $this->trade_service = new TradeService();
         $this->instrument_repo = new InstrumentRepository();
         $this->broker_repo = new BrokerAccountRepository();
+        $this->document_repo = new DocumentRepository();
     }
 
     public function list(): void
@@ -34,6 +36,13 @@ class TradeController
             if (!isset($instruments[$trade->instrument_id])) {
                 $instruments[$trade->instrument_id] = $this->instrument_repo->find_by_id($trade->instrument_id);
             }
+        }
+
+        // Get document counts for each trade
+        $document_counts = [];
+        $trade_doc_repo = new TradeDocumentRepository();
+        foreach ($trades as $trade) {
+            $document_counts[$trade->id] = count($trade_doc_repo->get_document_ids($trade->id));
         }
 
         require __DIR__ . '/../views/trades/list.php';
@@ -113,6 +122,11 @@ class TradeController
             $_SESSION['old_input'] = $input;
             header('Location: ?action=trade_new_buy');
             exit;
+        } catch (\Exception $e) {
+            $_SESSION['form_errors'] = ['documents' => $e->getMessage()];
+            $_SESSION['old_input'] = $input;
+            header('Location: ?action=trade_new_buy');
+            exit;
         }
     }
 
@@ -181,12 +195,28 @@ class TradeController
             'notes' => $_POST['notes'] ?? '',
         ];
 
+        // Handle file uploads
+        $uploaded_document_ids = $this->handle_file_uploads($user_id);
+        if (!empty($uploaded_document_ids)) {
+            $input['document_ids'] = array_unique($uploaded_document_ids);
+        }
+
         try {
-            $this->trade_service->create_sell_fifo($user_id, $input);
-            header('Location: ?action=trades');
+            $trade_id = $this->trade_service->create_sell_fifo($user_id, $input);
+            // Redirect to edit page if documents were uploaded, otherwise to list
+            if (!empty($uploaded_document_ids)) {
+                header('Location: ?action=trade_edit&id=' . $trade_id);
+            } else {
+                header('Location: ?action=trades');
+            }
             exit;
         } catch (ValidationException $e) {
             $_SESSION['form_errors'] = $e->errors;
+            $_SESSION['old_input'] = $input;
+            header('Location: ?action=trade_new_sell');
+            exit;
+        } catch (\Exception $e) {
+            $_SESSION['form_errors'] = ['documents' => $e->getMessage()];
             $_SESSION['old_input'] = $input;
             header('Location: ?action=trade_new_sell');
             exit;
@@ -237,6 +267,18 @@ class TradeController
 
         $instruments = $this->instrument_repo->search('', 200);
         $broker_accounts = $this->broker_repo->list_by_user($user_id);
+        
+        // Get linked document IDs and fetch document details
+        $linked_document_ids = $this->trade_service->get_linked_document_ids($id);
+        $existing_documents = [];
+        if (!empty($linked_document_ids)) {
+            foreach ($linked_document_ids as $doc_id) {
+                $doc = $this->document_repo->find_by_id($user_id, $doc_id);
+                if ($doc !== null) {
+                    $existing_documents[] = $doc;
+                }
+            }
+        }
 
         // Use old_input if available (from validation error), otherwise use trade
         // Convert fx_rate_to_eur to broker_fx_rate for display (round to 4 decimals for clean display)
@@ -309,6 +351,18 @@ class TradeController
             'notes' => $_POST['notes'] ?? '',
         ];
 
+        // Handle file uploads
+        $uploaded_document_ids = $this->handle_file_uploads($user_id);
+        
+        // Get currently linked document IDs (to preserve them if no new uploads)
+        $current_linked_ids = $this->trade_service->get_linked_document_ids($id);
+        
+        // Combine uploaded documents with existing linked documents
+        $all_document_ids = array_merge($current_linked_ids, $uploaded_document_ids);
+        
+        // Always set document_ids (even if empty) so service knows to update links
+        $input['document_ids'] = array_unique($all_document_ids);
+
         try {
             $trade = $this->trade_service->get_trade($user_id, $id);
             
@@ -318,7 +372,8 @@ class TradeController
                 $this->trade_service->update_sell($user_id, $id, $input);
             }
 
-            header('Location: ?action=trades');
+            // Redirect back to edit page to stay on same page after upload
+            header('Location: ?action=trade_edit&id=' . $id);
             exit;
         } catch (ValidationException $e) {
             $_SESSION['form_errors'] = $e->errors;
@@ -328,7 +383,158 @@ class TradeController
         } catch (NotFoundException $e) {
             header('Location: ?action=trades');
             exit;
+        } catch (\Exception $e) {
+            $_SESSION['form_errors'] = ['documents' => $e->getMessage()];
+            $_SESSION['old_input'] = $input;
+            header('Location: ?action=trade_edit&id=' . $id);
+            exit;
         }
+    }
+
+    /**
+     * Handle file uploads and return array of document IDs
+     * @return array Document IDs
+     */
+    private function handle_file_uploads(int $user_id): array
+    {
+        require_once __DIR__ . '/../infrastructure/file_upload.php';
+
+        $document_ids = [];
+
+        if (!isset($_FILES['documents']) || !is_array($_FILES['documents']['name'])) {
+            return $document_ids;
+        }
+
+        $files = $_FILES['documents'];
+        $file_count = count($files['name']);
+
+        for ($i = 0; $i < $file_count; $i++) {
+            // Skip if no file uploaded for this slot
+            if ($files['error'][$i] === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+
+            // Check for upload errors
+            if ($files['error'][$i] !== UPLOAD_ERR_OK) {
+                throw new \Exception('File upload error: ' . $files['name'][$i]);
+            }
+
+            // Prepare file array for helper function
+            $file = [
+                'name' => $files['name'][$i],
+                'type' => $files['type'][$i],
+                'tmp_name' => $files['tmp_name'][$i],
+                'error' => $files['error'][$i],
+                'size' => $files['size'][$i],
+            ];
+
+            try {
+                // Handle upload and get document data
+                $document_data = handle_document_upload($file, $user_id, 'TRADES');
+
+                // Check for duplicate (same SHA256 for this user)
+                $existing_doc = $this->document_repo->find_by_sha256($user_id, $document_data['sha256']);
+                
+                if ($existing_doc !== null) {
+                    // Use existing document
+                    $document_ids[] = $existing_doc->id;
+                } else {
+                    // Create new document record
+                    $doc_id = $this->document_repo->create($user_id, $document_data);
+                    $document_ids[] = $doc_id;
+                }
+            } catch (\Exception $e) {
+                throw new \Exception('Failed to upload ' . $file['name'] . ': ' . $e->getMessage());
+            }
+        }
+
+        return $document_ids;
+    }
+
+    public function download_document(int $id): void
+    {
+        $user_id = current_user_id();
+        if ($user_id === null) {
+            header('Location: ?action=login');
+            exit;
+        }
+
+        // Find document and verify ownership
+        $document = $this->document_repo->find_by_id($user_id, $id);
+        if ($document === null) {
+            http_response_code(404);
+            echo 'Document not found';
+            exit;
+        }
+
+        // Build full file path
+        $storage_base = __DIR__ . '/../storage/';
+        $file_path = $storage_base . $document->storage_path;
+
+        // Verify file exists
+        if (!file_exists($file_path) || !is_readable($file_path)) {
+            http_response_code(404);
+            echo 'File not found on disk';
+            exit;
+        }
+
+        // Set headers for download
+        header('Content-Type: ' . $document->mime_type);
+        header('Content-Disposition: attachment; filename="' . addslashes($document->original_filename) . '"');
+        header('Content-Length: ' . $document->file_size_bytes);
+        header('Cache-Control: private, max-age=0, must-revalidate');
+        header('Pragma: public');
+
+        // Stream file
+        readfile($file_path);
+        exit;
+    }
+
+    public function delete_document(int $id): void
+    {
+        $user_id = current_user_id();
+        if ($user_id === null) {
+            header('Location: ?action=login');
+            exit;
+        }
+
+        // Find document and verify ownership
+        $document = $this->document_repo->find_by_id($user_id, $id);
+        if ($document === null) {
+            http_response_code(404);
+            echo 'Document not found';
+            exit;
+        }
+
+        // Get trade_id from query string for redirect
+        $trade_id = isset($_GET['trade_id']) ? (int) $_GET['trade_id'] : 0;
+
+        // Build full file path
+        $storage_base = __DIR__ . '/../storage/';
+        $file_path = $storage_base . $document->storage_path;
+
+        // Delete file from disk (if exists)
+        if (file_exists($file_path)) {
+            @unlink($file_path);
+        }
+
+        // Delete all links from trade_document table
+        $trade_doc_repo = new TradeDocumentRepository();
+        $linked_trade_ids = $trade_doc_repo->get_trade_ids_for_document($id);
+        foreach ($linked_trade_ids as $t_id) {
+            $trade_doc_repo->unlink($t_id, $id);
+        }
+
+        // Delete document record from database
+        $this->document_repo->delete($user_id, $id);
+
+        // Redirect back to trade edit page if trade_id provided, otherwise to trades list
+        if ($trade_id > 0) {
+            header('Location: ?action=trade_edit&id=' . $trade_id);
+        } else {
+            header('Location: ?action=trades');
+        }
+        exit;
     }
 
     /**

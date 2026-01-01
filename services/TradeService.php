@@ -8,6 +8,7 @@ class TradeService
     private TradeLotRepository $lot_repo;
     private TradeLotAllocationRepository $allocation_repo;
     private InstrumentRepository $instrument_repo;
+    private TradeDocumentRepository $trade_document_repo;
 
     public function __construct()
     {
@@ -15,6 +16,7 @@ class TradeService
         $this->lot_repo = new TradeLotRepository();
         $this->allocation_repo = new TradeLotAllocationRepository();
         $this->instrument_repo = new InstrumentRepository();
+        $this->trade_document_repo = new TradeDocumentRepository();
     }
 
     public function list_trades(int $user_id, array $filters = []): array
@@ -91,6 +93,11 @@ class TradeService
         ];
 
         $this->lot_repo->create_lot($user_id, $lot_data);
+
+        // Link documents if provided
+        if (isset($input['document_ids']) && is_array($input['document_ids'])) {
+            $this->link_documents($user_id, $trade_id, $input['document_ids']);
+        }
 
         return $trade_id;
     }
@@ -218,6 +225,11 @@ class TradeService
             $total_proceeds_allocated = $this->add_decimals($total_proceeds_allocated, $proceeds_part_eur);
             $total_cost_allocated = $this->add_decimals($total_cost_allocated, $cost_basis_part_eur);
             $allocations_created++;
+        }
+
+        // Link documents if provided
+        if (isset($input['document_ids']) && is_array($input['document_ids'])) {
+            $this->link_documents($user_id, $sell_trade_id, $input['document_ids']);
         }
 
         return $sell_trade_id;
@@ -485,6 +497,11 @@ class TradeService
 
             $this->lot_repo->update_lot($user_id, $lot->id, $lot_data);
         }
+
+        // Update document links if provided
+        if (isset($input['document_ids']) && is_array($input['document_ids'])) {
+            $this->replace_document_links($user_id, $trade_id, $input['document_ids']);
+        }
     }
 
     public function update_sell(int $user_id, int $trade_id, array $input): void
@@ -622,6 +639,11 @@ class TradeService
         ];
 
         $this->trade_repo->update_trade($user_id, $trade_id, $trade_data);
+
+        // Update document links if provided
+        if (isset($input['document_ids']) && is_array($input['document_ids'])) {
+            $this->replace_document_links($user_id, $trade_id, $input['document_ids']);
+        }
     }
 
     private function validate(array $input): array
@@ -785,6 +807,58 @@ class TradeService
     private function min_decimal(string $a, string $b): string
     {
         return $this->compare_decimals($a, $b) <= 0 ? $a : $b;
+    }
+
+    /**
+     * Link documents to a trade (with ownership validation)
+     */
+    private function link_documents(int $user_id, int $trade_id, array $document_ids): void
+    {
+        if (empty($document_ids)) {
+            return;
+        }
+
+        $document_repo = new DocumentRepository();
+
+        // Validate all documents belong to user
+        foreach ($document_ids as $doc_id) {
+            $doc = $document_repo->find_by_id($user_id, (int) $doc_id);
+            if ($doc === null) {
+                throw new \Exception('Document not found or does not belong to you');
+            }
+        }
+
+        // Link all documents
+        foreach ($document_ids as $doc_id) {
+            $this->trade_document_repo->link($trade_id, (int) $doc_id);
+        }
+    }
+
+    /**
+     * Replace all document links for a trade (with ownership validation)
+     */
+    private function replace_document_links(int $user_id, int $trade_id, array $document_ids): void
+    {
+        $document_repo = new DocumentRepository();
+
+        // Validate all documents belong to user
+        foreach ($document_ids as $doc_id) {
+            $doc = $document_repo->find_by_id($user_id, (int) $doc_id);
+            if ($doc === null) {
+                throw new \Exception('Document not found or does not belong to you');
+            }
+        }
+
+        // Replace all links
+        $this->trade_document_repo->replace_links($trade_id, array_map('intval', $document_ids));
+    }
+
+    /**
+     * Get all document IDs linked to a trade
+     */
+    public function get_linked_document_ids(int $trade_id): array
+    {
+        return $this->trade_document_repo->get_document_ids($trade_id);
     }
 }
 
