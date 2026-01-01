@@ -13,7 +13,7 @@ ob_start();
 
 <!-- Filters -->
 <div class="bg-white rounded-lg shadow p-4 mb-6">
-    <form method="GET" action="?action=news" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <form method="GET" action="?action=news" class="grid grid-cols-1 md:grid-cols-6 gap-4">
         <input type="hidden" name="action" value="news">
         
         <!-- Ticker -->
@@ -27,6 +27,21 @@ ob_start();
                 placeholder="e.g. MU"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+        </div>
+        
+        <!-- Show Only -->
+        <div>
+            <label for="show_only" class="block text-sm font-medium text-gray-700 mb-1">Show Only</label>
+            <select 
+                id="show_only" 
+                name="show_only"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onchange="this.form.submit()"
+            >
+                <option value="all" <?= ($_GET['show_only'] ?? 'all') === 'all' ? 'selected' : '' ?>>All</option>
+                <option value="holdings" <?= ($_GET['show_only'] ?? '') === 'holdings' ? 'selected' : '' ?>>Holdings</option>
+                <option value="watchlist" <?= ($_GET['show_only'] ?? '') === 'watchlist' ? 'selected' : '' ?>>Watchlist</option>
+            </select>
         </div>
 
         <!-- Sentiment -->
@@ -151,7 +166,14 @@ ob_start();
                                 <?php if (!empty($article->tickers)): ?>
                                     <div class="flex flex-wrap gap-1">
                                         <?php foreach ($article->tickers as $ticker): ?>
-                                            <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
+                                            <?php 
+                                            $ticker_upper = strtoupper(trim($ticker));
+                                            $is_holding = isset($holdings_tickers_lookup[$ticker_upper]);
+                                            $ticker_class = $is_holding 
+                                                ? 'px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium' 
+                                                : 'px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium';
+                                            ?>
+                                            <span class="<?= $ticker_class ?>">
                                                 <?= htmlspecialchars($ticker) ?>
                                             </span>
                                         <?php endforeach; ?>

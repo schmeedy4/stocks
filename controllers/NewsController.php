@@ -16,6 +16,12 @@ class NewsController
 
     public function list(): void
     {
+        $user_id = current_user_id();
+        if ($user_id === null) {
+            header('Location: ?action=login');
+            exit;
+        }
+
         // Get filter parameters from query string
         $ticker = isset($_GET['ticker']) && $_GET['ticker'] !== '' 
             ? strtoupper(trim($_GET['ticker'])) 
@@ -27,15 +33,39 @@ class NewsController
         $min_read_grade = isset($_GET['min_read_grade']) && $_GET['min_read_grade'] !== '' 
             ? (int) $_GET['min_read_grade'] 
             : null;
+        $show_only = isset($_GET['show_only']) && $_GET['show_only'] !== '' ? $_GET['show_only'] : 'all';
         $sort = isset($_GET['sort']) && $_GET['sort'] !== '' ? $_GET['sort'] : 'captured_desc';
         $page = isset($_GET['page']) && $_GET['page'] !== '' ? max(1, (int) $_GET['page']) : 1;
         $limit = isset($_GET['limit']) && $_GET['limit'] !== '' ? max(1, (int) $_GET['limit']) : 25;
+
+        // Get holdings tickers (always, for highlighting in the view)
+        $holdings_service = new HoldingsService();
+        $holdings_result = $holdings_service->get_holdings($user_id);
+        $holdings = $holdings_result['holdings'];
+        
+        // Extract tickers from holdings
+        $holdings_tickers_list = [];
+        foreach ($holdings as $holding) {
+            if (isset($holding['instrument']) && $holding['instrument']->ticker !== null && $holding['instrument']->ticker !== '') {
+                $holdings_tickers_list[] = strtoupper(trim($holding['instrument']->ticker));
+            }
+        }
+        // Remove duplicates and create lookup array for fast checking
+        $holdings_tickers_list = array_unique($holdings_tickers_list);
+        $holdings_tickers_lookup = array_flip($holdings_tickers_list);
+
+        // Get holdings tickers for filtering (if filter is enabled)
+        $holdings_tickers = null;
+        if ($show_only === 'holdings') {
+            $holdings_tickers = $holdings_tickers_list;
+        }
 
         $result = $this->news_service->search(
             $ticker,
             $sentiment,
             $min_confidence,
             $min_read_grade,
+            $holdings_tickers,
             $sort,
             $page,
             $limit

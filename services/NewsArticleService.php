@@ -19,6 +19,7 @@ class NewsArticleService
         ?string $sentiment = null,
         ?int $min_confidence = null,
         ?int $min_read_grade = null,
+        ?array $holdings_tickers = null,
         string $sort = 'captured_desc',
         int $page = 1,
         int $limit = 25
@@ -28,6 +29,7 @@ class NewsArticleService
             $sentiment,
             $min_confidence,
             $min_read_grade,
+            $holdings_tickers,
             $sort,
             $page,
             $limit

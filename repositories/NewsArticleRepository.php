@@ -20,6 +20,7 @@ class NewsArticleRepository
         ?string $sentiment = null,
         ?int $min_confidence = null,
         ?int $min_read_grade = null,
+        ?array $holdings_tickers = null,
         string $sort = 'captured_desc',
         int $page = 1,
         int $limit = 25
@@ -41,6 +42,21 @@ class NewsArticleRepository
         if ($ticker !== null && $ticker !== '') {
             $sql .= ' AND JSON_SEARCH(tickers, "one", :ticker, NULL, "$[*]") IS NOT NULL';
             $params['ticker'] = strtoupper(trim($ticker));
+        }
+
+        // Filter by holdings tickers (show only news for tickers in user's holdings)
+        if ($holdings_tickers !== null && !empty($holdings_tickers)) {
+            // Normalize holdings tickers to uppercase
+            $normalized_holdings = array_map(function($t) { return strtoupper(trim($t)); }, $holdings_tickers);
+            $normalized_holdings = array_filter($normalized_holdings, function($t) { return $t !== ''; });
+            
+            if (!empty($normalized_holdings)) {
+                // Use JSON_OVERLAPS (MySQL 8.0.17+) to check if news tickers overlap with holdings tickers
+                // JSON_OVERLAPS returns true if two JSON documents have any matching values
+                $holdings_json = json_encode(array_values($normalized_holdings));
+                $sql .= ' AND JSON_OVERLAPS(tickers, :holdings_tickers_json)';
+                $params['holdings_tickers_json'] = $holdings_json;
+            }
         }
 
         // Filter by sentiment
@@ -87,6 +103,9 @@ class NewsArticleRepository
         foreach ($params as $key => $value) {
             if ($key === 'limit' || $key === 'offset') {
                 $stmt->bindValue(':' . $key, $value, PDO::PARAM_INT);
+            } elseif ($key === 'holdings_tickers_json') {
+                // JSON parameter needs to be bound as string
+                $stmt->bindValue(':' . $key, $value, PDO::PARAM_STR);
             } else {
                 $stmt->bindValue(':' . $key, $value);
             }
@@ -138,10 +157,24 @@ class NewsArticleRepository
             $count_sql .= ' AND read_grade >= :min_read_grade';
             $count_params['min_read_grade'] = $min_read_grade;
         }
+        if ($holdings_tickers !== null && !empty($holdings_tickers)) {
+            $normalized_holdings = array_map(function($t) { return strtoupper(trim($t)); }, $holdings_tickers);
+            $normalized_holdings = array_filter($normalized_holdings, function($t) { return $t !== ''; });
+            if (!empty($normalized_holdings)) {
+                $holdings_json = json_encode(array_values($normalized_holdings));
+                $count_sql .= ' AND JSON_OVERLAPS(tickers, :holdings_tickers_json)';
+                $count_params['holdings_tickers_json'] = $holdings_json;
+            }
+        }
 
         $count_stmt = $this->db->prepare($count_sql);
         foreach ($count_params as $key => $value) {
-            $count_stmt->bindValue(':' . $key, $value);
+            if ($key === 'holdings_tickers_json') {
+                // JSON parameter needs to be bound as string
+                $count_stmt->bindValue(':' . $key, $value, PDO::PARAM_STR);
+            } else {
+                $count_stmt->bindValue(':' . $key, $value);
+            }
         }
         $count_stmt->execute();
         $count_row = $count_stmt->fetch(PDO::FETCH_ASSOC);
