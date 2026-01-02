@@ -511,3 +511,34 @@ CREATE TABLE trade_document (
   CONSTRAINT fk_td_document
     FOREIGN KEY (document_id) REFERENCES document(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- 16) watchlist (watchlists for instruments)
+-- -----------------------------
+CREATE TABLE watchlist (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(80) NOT NULL,
+  is_default TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  UNIQUE KEY uniq_user_name (user_id, name),
+  KEY idx_user (user_id),
+
+  CONSTRAINT fk_watchlist_user FOREIGN KEY (user_id) REFERENCES user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- 17) watchlist_item (items for watchlists)
+-- -----------------------------
+CREATE TABLE watchlist_item (
+  watchlist_id BIGINT UNSIGNED NOT NULL,
+  instrument_id BIGINT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (watchlist_id, instrument_id),
+  KEY idx_instrument (instrument_id),
+
+  CONSTRAINT fk_wli_watchlist FOREIGN KEY (watchlist_id) REFERENCES watchlist(id) ON DELETE CASCADE,
+  CONSTRAINT fk_wli_instrument FOREIGN KEY (instrument_id) REFERENCES instrument(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
