@@ -18,6 +18,15 @@ class InstrumentService
         return $this->instrument_repo->search($q, 200);
     }
 
+    /**
+     * List instruments with watchlist status for a user.
+     * Returns array of arrays with 'instrument' and 'is_in_watchlist' keys.
+     */
+    public function list_with_watchlist_status(int $user_id, string $q): array
+    {
+        return $this->instrument_repo->search_with_watchlist_status($user_id, $q, 200);
+    }
+
     public function get(int $id): Instrument
     {
         $instrument = $this->instrument_repo->find_by_id($id);

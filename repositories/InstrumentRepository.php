@@ -21,8 +21,11 @@ class InstrumentRepository
         $params = [];
 
         if ($q !== '') {
-            $sql .= ' WHERE name LIKE :q OR ticker LIKE :q OR isin LIKE :q';
-            $params['q'] = '%' . $q . '%';
+            $sql .= ' WHERE name LIKE :q1 OR ticker LIKE :q2 OR isin LIKE :q3';
+            $search_term = '%' . $q . '%';
+            $params['q1'] = $search_term;
+            $params['q2'] = $search_term;
+            $params['q3'] = $search_term;
         }
 
         $sql .= ' ORDER BY name ASC LIMIT :limit';
@@ -52,6 +55,70 @@ class InstrumentRepository
         }
 
         return $instruments;
+    }
+
+    /**
+     * Search instruments with watchlist status for a user.
+     * Returns array of arrays with instrument data and is_in_watchlist boolean.
+     */
+    public function search_with_watchlist_status(int $user_id, string $q = '', int $limit = 200): array
+    {
+        // Get default watchlist ID (will create if missing)
+        $watchlist_repo = new WatchlistRepository();
+        $default_watchlist_id = $watchlist_repo->watchlist_get_default_id($user_id);
+
+        $sql = '
+            SELECT 
+                i.id, 
+                i.isin, 
+                i.ticker, 
+                i.name, 
+                i.instrument_type, 
+                i.country_code, 
+                i.trading_currency, 
+                i.dividend_payer_id,
+                CASE WHEN wli.instrument_id IS NULL THEN 0 ELSE 1 END AS is_in_watchlist
+            FROM instrument i
+            LEFT JOIN watchlist_item wli ON i.id = wli.instrument_id AND wli.watchlist_id = :watchlist_id
+        ';
+
+        $params = ['watchlist_id' => $default_watchlist_id];
+
+        if ($q !== '') {
+            $sql .= ' WHERE i.name LIKE :q OR i.ticker LIKE :q OR i.isin LIKE :q';
+            $params['q'] = '%' . $q . '%';
+        }
+
+        $sql .= ' ORDER BY i.name ASC LIMIT :limit';
+
+        $stmt = $this->db->prepare($sql);
+        
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        $results = [];
+        foreach ($rows as $row) {
+            $results[] = [
+                'instrument' => new Instrument(
+                    (int) $row['id'],
+                    $row['isin'],
+                    $row['ticker'],
+                    $row['name'],
+                    $row['instrument_type'],
+                    $row['country_code'],
+                    $row['trading_currency'],
+                    $row['dividend_payer_id'] ? (int) $row['dividend_payer_id'] : null
+                ),
+                'is_in_watchlist' => (bool) $row['is_in_watchlist'],
+            ];
+        }
+
+        return $results;
     }
 
     public function find_by_id(int $id): ?Instrument

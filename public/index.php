@@ -369,6 +369,96 @@ switch ($action) {
         $controller->get_json();
         break;
 
+    case 'watchlist':
+        $controller = new WatchlistController();
+        $controller->list();
+        break;
+
+    case 'watchlist_add':
+        $controller = new WatchlistController();
+        $controller->add_post();
+        break;
+
+    case 'watchlist_remove':
+        $controller = new WatchlistController();
+        $controller->remove_post();
+        break;
+
+    case 'watchlist_new':
+        $controller = new WatchlistController();
+        $controller->new();
+        break;
+
+    case 'watchlist_create':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=watchlist');
+            exit;
+        }
+        $controller = new WatchlistController();
+        $controller->create_post();
+        break;
+
+    case 'watchlist_edit':
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=watchlist');
+            exit;
+        }
+        $controller = new WatchlistController();
+        $controller->edit($id);
+        break;
+
+    case 'watchlist_update':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=watchlist');
+            exit;
+        }
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=watchlist');
+            exit;
+        }
+        $controller = new WatchlistController();
+        $controller->update_post($id);
+        break;
+
+    case 'watchlist_delete':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=watchlist');
+            exit;
+        }
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            header('Location: ?action=watchlist');
+            exit;
+        }
+        $controller = new WatchlistController();
+        $controller->delete_post($id);
+        break;
+
+    case 'watchlist_search_instruments':
+        $controller = new WatchlistController();
+        $controller->search_instruments_json();
+        break;
+
+    case 'watchlist_add_instrument':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=watchlist');
+            exit;
+        }
+        $controller = new WatchlistController();
+        $controller->add_instrument_post();
+        break;
+
+    case 'watchlist_remove_instrument':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ?action=watchlist');
+            exit;
+        }
+        $controller = new WatchlistController();
+        $controller->remove_instrument_post();
+        break;
+
     default:
         header('Location: ?action=login');
         exit;
