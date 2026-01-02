@@ -21,6 +21,7 @@ class NewsArticleRepository
         ?int $min_confidence = null,
         ?int $min_read_grade = null,
         ?array $holdings_tickers = null,
+        ?array $watchlist_tickers = null,
         string $sort = 'captured_desc',
         int $page = 1,
         int $limit = 25
@@ -56,6 +57,20 @@ class NewsArticleRepository
                 $holdings_json = json_encode(array_values($normalized_holdings));
                 $sql .= ' AND JSON_OVERLAPS(tickers, :holdings_tickers_json)';
                 $params['holdings_tickers_json'] = $holdings_json;
+            }
+        }
+
+        // Filter by watchlist tickers (show only news for tickers in user's watchlists)
+        if ($watchlist_tickers !== null && !empty($watchlist_tickers)) {
+            // Normalize watchlist tickers to uppercase
+            $normalized_watchlist = array_map(function($t) { return strtoupper(trim($t)); }, $watchlist_tickers);
+            $normalized_watchlist = array_filter($normalized_watchlist, function($t) { return $t !== ''; });
+            
+            if (!empty($normalized_watchlist)) {
+                // Use JSON_OVERLAPS to check if news tickers overlap with watchlist tickers
+                $watchlist_json = json_encode(array_values($normalized_watchlist));
+                $sql .= ' AND JSON_OVERLAPS(tickers, :watchlist_tickers_json)';
+                $params['watchlist_tickers_json'] = $watchlist_json;
             }
         }
 
@@ -103,7 +118,7 @@ class NewsArticleRepository
         foreach ($params as $key => $value) {
             if ($key === 'limit' || $key === 'offset') {
                 $stmt->bindValue(':' . $key, $value, PDO::PARAM_INT);
-            } elseif ($key === 'holdings_tickers_json') {
+            } elseif ($key === 'holdings_tickers_json' || $key === 'watchlist_tickers_json') {
                 // JSON parameter needs to be bound as string
                 $stmt->bindValue(':' . $key, $value, PDO::PARAM_STR);
             } else {
@@ -166,10 +181,19 @@ class NewsArticleRepository
                 $count_params['holdings_tickers_json'] = $holdings_json;
             }
         }
+        if ($watchlist_tickers !== null && !empty($watchlist_tickers)) {
+            $normalized_watchlist = array_map(function($t) { return strtoupper(trim($t)); }, $watchlist_tickers);
+            $normalized_watchlist = array_filter($normalized_watchlist, function($t) { return $t !== ''; });
+            if (!empty($normalized_watchlist)) {
+                $watchlist_json = json_encode(array_values($normalized_watchlist));
+                $count_sql .= ' AND JSON_OVERLAPS(tickers, :watchlist_tickers_json)';
+                $count_params['watchlist_tickers_json'] = $watchlist_json;
+            }
+        }
 
         $count_stmt = $this->db->prepare($count_sql);
         foreach ($count_params as $key => $value) {
-            if ($key === 'holdings_tickers_json') {
+            if ($key === 'holdings_tickers_json' || $key === 'watchlist_tickers_json') {
                 // JSON parameter needs to be bound as string
                 $count_stmt->bindValue(':' . $key, $value, PDO::PARAM_STR);
             } else {
@@ -299,6 +323,60 @@ class NewsArticleRepository
         }
 
         return (int) $this->db->lastInsertId();
+    }
+
+    /**
+     * Get sentiment counts for a ticker from news articles in the last N days.
+     * Returns array with counts: ['bullish' => int, 'bearish' => int, 'neutral' => int, 'mixed' => int]
+     */
+    public function get_sentiment_counts_days(string $ticker, int $days): array
+    {
+        $ticker_upper = strtoupper(trim($ticker));
+        
+        // Calculate date N days ago
+        $days_ago = date('Y-m-d H:i:s', strtotime("-{$days} days"));
+        
+        $stmt = $this->db->prepare('
+            SELECT sentiment, COUNT(*) as count
+            FROM news_article
+            WHERE JSON_SEARCH(tickers, "one", :ticker, NULL, "$[*]") IS NOT NULL
+            AND published_at >= :days_ago
+            AND published_at IS NOT NULL
+            GROUP BY sentiment
+        ');
+        $stmt->execute([
+            'ticker' => $ticker_upper,
+            'days_ago' => $days_ago,
+        ]);
+        
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Initialize counts
+        $counts = [
+            'bullish' => 0,
+            'bearish' => 0,
+            'neutral' => 0,
+            'mixed' => 0,
+        ];
+        
+        // Fill in actual counts
+        foreach ($rows as $row) {
+            $sentiment = $row['sentiment'];
+            if (isset($counts[$sentiment])) {
+                $counts[$sentiment] = (int) $row['count'];
+            }
+        }
+        
+        return $counts;
+    }
+
+    /**
+     * Get sentiment counts for a ticker from news articles in the last month (30 days).
+     * Returns array with counts: ['bullish' => int, 'bearish' => int, 'neutral' => int, 'mixed' => int]
+     */
+    public function get_sentiment_counts_last_month(string $ticker): array
+    {
+        return $this->get_sentiment_counts_days($ticker, 30);
     }
 }
 

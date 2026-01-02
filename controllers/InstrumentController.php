@@ -20,6 +20,26 @@ class InstrumentController
     {
         $instruments = $this->instrument_service->list('');
 
+        // Get sentiment counts for each instrument (30d and 90d)
+        $news_repo = new NewsArticleRepository();
+        $sentiment_counts_30d = [];
+        $sentiment_counts_90d = [];
+        foreach ($instruments as $instrument) {
+            if ($instrument->ticker !== null && $instrument->ticker !== '') {
+                $sentiment_counts_30d[$instrument->id] = $news_repo->get_sentiment_counts_days($instrument->ticker, 30);
+                $sentiment_counts_90d[$instrument->id] = $news_repo->get_sentiment_counts_days($instrument->ticker, 90);
+            } else {
+                $empty_counts = [
+                    'bullish' => 0,
+                    'bearish' => 0,
+                    'neutral' => 0,
+                    'mixed' => 0,
+                ];
+                $sentiment_counts_30d[$instrument->id] = $empty_counts;
+                $sentiment_counts_90d[$instrument->id] = $empty_counts;
+            }
+        }
+
         require __DIR__ . '/../views/instruments/list.php';
     }
 

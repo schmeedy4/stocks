@@ -36,7 +36,6 @@ ob_start();
                 id="show_only" 
                 name="show_only"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onchange="this.form.submit()"
             >
                 <option value="all" <?= ($_GET['show_only'] ?? 'all') === 'all' ? 'selected' : '' ?>>All</option>
                 <option value="holdings" <?= ($_GET['show_only'] ?? '') === 'holdings' ? 'selected' : '' ?>>Holdings</option>
@@ -169,9 +168,16 @@ ob_start();
                                             <?php 
                                             $ticker_upper = strtoupper(trim($ticker));
                                             $is_holding = isset($holdings_tickers_lookup[$ticker_upper]);
-                                            $ticker_class = $is_holding 
-                                                ? 'px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium' 
-                                                : 'px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium';
+                                            $is_watchlist = isset($watchlist_tickers_lookup[$ticker_upper]);
+                                            
+                                            // Priority: holdings (green) > watchlist (blue) > default (gray)
+                                            if ($is_holding) {
+                                                $ticker_class = 'px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium';
+                                            } elseif ($is_watchlist) {
+                                                $ticker_class = 'px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium';
+                                            } else {
+                                                $ticker_class = 'px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium';
+                                            }
                                             ?>
                                             <span class="<?= $ticker_class ?>">
                                                 <?= htmlspecialchars($ticker) ?>

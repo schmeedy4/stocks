@@ -54,10 +54,48 @@ class NewsController
         $holdings_tickers_list = array_unique($holdings_tickers_list);
         $holdings_tickers_lookup = array_flip($holdings_tickers_list);
 
+        // Get watchlist tickers (for highlighting in the view)
+        $watchlist_repo = new WatchlistRepository();
+        $watchlists = $watchlist_repo->list_by_user($user_id);
+        $watchlist_tickers_list = [];
+        foreach ($watchlists as $watchlist) {
+            $instruments = $watchlist_repo->list_instruments_by_watchlist_id($user_id, $watchlist->id);
+            foreach ($instruments as $instrument) {
+                if ($instrument->ticker !== null && $instrument->ticker !== '') {
+                    $ticker_upper = strtoupper(trim($instrument->ticker));
+                    // Only add if not already in holdings (holdings take priority)
+                    if (!isset($holdings_tickers_lookup[$ticker_upper])) {
+                        $watchlist_tickers_list[] = $ticker_upper;
+                    }
+                }
+            }
+        }
+        // Remove duplicates and create lookup array for fast checking
+        $watchlist_tickers_list = array_unique($watchlist_tickers_list);
+        $watchlist_tickers_lookup = array_flip($watchlist_tickers_list);
+
         // Get holdings tickers for filtering (if filter is enabled)
         $holdings_tickers = null;
         if ($show_only === 'holdings') {
             $holdings_tickers = $holdings_tickers_list;
+        }
+
+        // Get watchlist tickers for filtering (if filter is enabled)
+        $watchlist_tickers = null;
+        if ($show_only === 'watchlist') {
+            $watchlist_repo = new WatchlistRepository();
+            $watchlists = $watchlist_repo->list_by_user($user_id);
+            $watchlist_tickers_list = [];
+            foreach ($watchlists as $watchlist) {
+                $instruments = $watchlist_repo->list_instruments_by_watchlist_id($user_id, $watchlist->id);
+                foreach ($instruments as $instrument) {
+                    if ($instrument->ticker !== null && $instrument->ticker !== '') {
+                        $watchlist_tickers_list[] = strtoupper(trim($instrument->ticker));
+                    }
+                }
+            }
+            $watchlist_tickers_list = array_unique($watchlist_tickers_list);
+            $watchlist_tickers = array_values($watchlist_tickers_list);
         }
 
         $result = $this->news_service->search(
@@ -66,6 +104,7 @@ class NewsController
             $min_confidence,
             $min_read_grade,
             $holdings_tickers,
+            $watchlist_tickers,
             $sort,
             $page,
             $limit
