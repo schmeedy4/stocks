@@ -5,10 +5,12 @@ declare(strict_types=1);
 class NewsArticleService
 {
     private NewsArticleRepository $news_repo;
+    private NewsReadRepository $read_repo;
 
     public function __construct()
     {
         $this->news_repo = new NewsArticleRepository();
+        $this->read_repo = new NewsReadRepository();
     }
 
     /**
@@ -23,7 +25,8 @@ class NewsArticleService
         ?array $watchlist_tickers = null,
         string $sort = 'captured_desc',
         int $page = 1,
-        int $limit = 25
+        int $limit = 25,
+        ?int $user_id = null
     ): array {
         $result = $this->news_repo->search(
             $ticker,
@@ -37,8 +40,17 @@ class NewsArticleService
             $limit
         );
 
+        // Add read status if user_id is provided
+        $items = $result['items'];
+        if ($user_id !== null) {
+            $read_ids = $this->read_repo->get_read_article_ids($user_id);
+            foreach ($items as $item) {
+                $item->is_read = isset($read_ids[$item->id]);
+            }
+        }
+
         return [
-            'items' => $result['items'],
+            'items' => $items,
             'total' => $result['total'],
             'page' => $page,
             'limit' => $limit,

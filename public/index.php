@@ -369,6 +369,16 @@ switch ($action) {
         $controller->get_json();
         break;
 
+    case 'news_toggle_read':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+        $controller = new NewsController();
+        $controller->toggle_read_post();
+        break;
+
     case 'watchlist':
         $controller = new WatchlistController();
         $controller->list();

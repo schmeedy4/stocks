@@ -417,7 +417,25 @@ CREATE TABLE news_article (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
--- 13) document (documents for user)
+-- 13) news_read (read news articles)
+-- -----------------------------
+CREATE TABLE news_read (
+  user_id BIGINT UNSIGNED NOT NULL,
+  news_article_id BIGINT UNSIGNED NOT NULL,
+
+  read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (user_id, news_article_id),
+
+  CONSTRAINT fk_nr_user
+    FOREIGN KEY (user_id) REFERENCES user(id),
+
+  CONSTRAINT fk_nr_news
+    FOREIGN KEY (news_article_id) REFERENCES news_article(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- 14) document (documents for user)
 -- -----------------------------
 CREATE TABLE document (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -482,7 +500,7 @@ CREATE TABLE document (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
--- 14) dividend_document (documents for dividends)
+-- 15) dividend_document (documents for dividends)
 -- -----------------------------
 CREATE TABLE dividend_document (
   dividend_id BIGINT UNSIGNED NOT NULL,
@@ -498,7 +516,7 @@ CREATE TABLE dividend_document (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
--- 15) trade_document (documents for trades)
+-- 16) trade_document (documents for trades)
 -- -----------------------------
 CREATE TABLE trade_document (
   trade_id BIGINT UNSIGNED NOT NULL,
@@ -514,7 +532,7 @@ CREATE TABLE trade_document (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
--- 16) watchlist (watchlists for instruments)
+-- 17) watchlist (watchlists for instruments)
 -- -----------------------------
 CREATE TABLE watchlist (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -530,7 +548,7 @@ CREATE TABLE watchlist (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
--- 17) watchlist_item (items for watchlists)
+-- 18) watchlist_item (items for watchlists)
 -- -----------------------------
 CREATE TABLE watchlist_item (
   watchlist_id BIGINT UNSIGNED NOT NULL,

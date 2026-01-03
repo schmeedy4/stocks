@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 class NewsArticle
 {
+    public bool $is_read = false;
+
     public function __construct(
         public readonly int $id,
         public readonly string $source,

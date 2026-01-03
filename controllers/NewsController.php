@@ -107,7 +107,8 @@ class NewsController
             $watchlist_tickers,
             $sort,
             $page,
-            $limit
+            $limit,
+            $user_id
         );
 
         $articles = $result['items'];
@@ -203,6 +204,49 @@ class NewsController
                 'tags' => $article->tags,
                 'recap' => $article->recap,
                 'raw_json' => $article->raw_json,
+            ]);
+        } catch (NotFoundException $e) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Article not found']);
+        } catch (\Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Internal server error']);
+        }
+    }
+
+    public function toggle_read_post(): void
+    {
+        $user_id = current_user_id();
+        if ($user_id === null) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+
+        $article_id = isset($_POST['article_id']) ? (int) $_POST['article_id'] : 0;
+        if ($article_id <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid article_id']);
+            exit;
+        }
+
+        try {
+            // Verify article exists
+            $article = $this->news_service->get($article_id);
+            
+            $read_repo = new NewsReadRepository();
+            $is_read = $read_repo->toggle_read($user_id, $article_id);
+            
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'is_read' => $is_read,
             ]);
         } catch (NotFoundException $e) {
             http_response_code(404);

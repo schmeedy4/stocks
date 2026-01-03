@@ -134,6 +134,7 @@ ob_start();
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Read</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tickers</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
@@ -149,8 +150,25 @@ ob_start();
                     <?php foreach ($articles as $index => $article): ?>
                         <tr 
                             id="article-<?= $article->id ?>"
-                            class="<?= $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' ?> hover:bg-blue-50 <?= (isset($_GET['highlight']) && (int)$_GET['highlight'] === $article->id) ? 'bg-yellow-100' : '' ?>"
+                            class="<?= $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' ?> hover:bg-blue-50 <?= (isset($_GET['highlight']) && (int)$_GET['highlight'] === $article->id) ? 'bg-yellow-100' : '' ?> <?= (isset($article->is_read) && $article->is_read) ? 'opacity-75' : '' ?>"
                         >
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <button 
+                                    onclick="toggleRead(<?= $article->id ?>)"
+                                    class="p-2 rounded-md hover:bg-gray-200 transition-colors"
+                                    title="<?= (isset($article->is_read) && $article->is_read) ? 'Mark as unread' : 'Mark as read' ?>"
+                                >
+                                    <?php if (isset($article->is_read) && $article->is_read): ?>
+                                        <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                        </svg>
+                                    <?php else: ?>
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    <?php endif; ?>
+                                </button>
+                            </td>
                             <td class="px-6 py-4">
                                 <a 
                                     href="<?= htmlspecialchars($article->url) ?>" 
@@ -404,6 +422,45 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function toggleRead(articleId) {
+    const formData = new FormData();
+    formData.append('article_id', articleId);
+    
+    fetch('?action=news_toggle_read', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
+        
+        // Update the UI
+        const row = document.getElementById('article-' + articleId);
+        if (!row) return;
+        
+        const button = row.querySelector('td:first-child button');
+        if (!button) return;
+        
+        if (data.is_read) {
+            // Mark as read
+            button.innerHTML = '<svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>';
+            button.title = 'Mark as unread';
+            row.classList.add('opacity-75');
+        } else {
+            // Mark as unread
+            button.innerHTML = '<svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+            button.title = 'Mark as read';
+            row.classList.remove('opacity-75');
+        }
+    })
+    .catch(error => {
+        alert('Error toggling read status: ' + error.message);
+    });
 }
 
 // Close modal on outside click
