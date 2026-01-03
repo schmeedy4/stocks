@@ -269,23 +269,75 @@ ob_start();
 
     <!-- Pagination -->
     <?php if ($total_pages > 1): ?>
-        <div class="mt-4 flex justify-between items-center">
+        <div class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="text-sm text-gray-700">
                 Showing <?= (($page - 1) * $limit) + 1 ?> to <?= min($page * $limit, $total) ?> of <?= $total ?> articles
             </div>
-            <div class="flex gap-2">
+            <div class="flex items-center gap-1">
                 <?php if ($page > 1): ?>
                     <a 
                         href="?action=news&<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>"
-                        class="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                        class="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm"
                     >
                         Previous
                     </a>
                 <?php endif; ?>
+                
+                <?php
+                // Smart pagination logic
+                $current_page = $page;
+                $total_pages_num = $total_pages;
+                $pages_to_show = [];
+                
+                // Always show first page
+                if ($current_page > 3) {
+                    $pages_to_show[] = 1;
+                    if ($current_page > 4) {
+                        $pages_to_show[] = 'ellipsis_start';
+                    }
+                }
+                
+                // Show pages around current page
+                $start = max(1, $current_page - 2);
+                $end = min($total_pages_num, $current_page + 2);
+                
+                for ($i = $start; $i <= $end; $i++) {
+                    $pages_to_show[] = $i;
+                }
+                
+                // Always show last page
+                if ($current_page < $total_pages_num - 2) {
+                    if ($current_page < $total_pages_num - 3) {
+                        $pages_to_show[] = 'ellipsis_end';
+                    }
+                    $pages_to_show[] = $total_pages_num;
+                }
+                
+                // Render page numbers
+                foreach ($pages_to_show as $page_num):
+                    if ($page_num === 'ellipsis_start' || $page_num === 'ellipsis_end'):
+                ?>
+                    <span class="px-3 py-2 text-gray-500">...</span>
+                <?php else: ?>
+                    <?php if ($page_num == $current_page): ?>
+                        <span class="px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium">
+                            <?= $page_num ?>
+                        </span>
+                    <?php else: ?>
+                        <a 
+                            href="?action=news&<?= http_build_query(array_merge($_GET, ['page' => $page_num])) ?>"
+                            class="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm"
+                        >
+                            <?= $page_num ?>
+                        </a>
+                    <?php endif; ?>
+                <?php endif; ?>
+                <?php endforeach; ?>
+                
                 <?php if ($page < $total_pages): ?>
                     <a 
                         href="?action=news&<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>"
-                        class="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                        class="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 text-sm"
                     >
                         Next
                     </a>
