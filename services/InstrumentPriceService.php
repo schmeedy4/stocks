@@ -142,6 +142,11 @@ class InstrumentPriceService
                 continue;
             }
 
+            // Skip private instruments
+            if ($instrument->is_private) {
+                continue;
+            }
+
             try {
                 $time_series_data = $this->fetch_time_series_from_api($instrument->ticker);
                 

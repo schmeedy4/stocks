@@ -35,8 +35,22 @@ ob_start();
                 <tbody class="bg-white divide-y divide-gray-200">
                     <?php foreach ($instruments as $index => $instrument): ?>
                         <tr class="<?= $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' ?> hover:bg-blue-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($instrument->isin ?? '') ?></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($instrument->ticker ?? '') ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <?php if ($instrument->is_private): ?>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
+                                        Private
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-gray-900"><?= htmlspecialchars($instrument->isin ?? '') ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <?php if ($instrument->is_private): ?>
+                                    <span class="text-gray-400">—</span>
+                                <?php else: ?>
+                                    <?= htmlspecialchars($instrument->ticker ?? '') ?>
+                                <?php endif; ?>
+                            </td>
                             <td class="px-6 py-4 text-sm text-gray-900"><?= htmlspecialchars($instrument->name) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($instrument->instrument_type) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($instrument->country_code ?? '') ?></td>

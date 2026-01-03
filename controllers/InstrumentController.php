@@ -67,6 +67,7 @@ class InstrumentController
                 'country_code' => '',
                 'trading_currency' => '',
                 'dividend_payer_id' => '',
+                'is_private' => false,
             ], $old_input);
         } else {
             $instrument_data = (object) [
@@ -77,6 +78,7 @@ class InstrumentController
                 'country_code' => '',
                 'trading_currency' => '',
                 'dividend_payer_id' => '',
+                'is_private' => false,
             ];
         }
 
@@ -99,6 +101,7 @@ class InstrumentController
             'country_code' => $_POST['country_code'] ?? '',
             'trading_currency' => $_POST['trading_currency'] ?? '',
             'dividend_payer_id' => $_POST['dividend_payer_id'] ?? '',
+            'is_private' => $_POST['is_private'] ?? '0',
         ];
 
         try {
@@ -145,6 +148,7 @@ class InstrumentController
                 'country_code' => $instrument->country_code,
                 'trading_currency' => $instrument->trading_currency,
                 'dividend_payer_id' => $instrument->dividend_payer_id,
+                'is_private' => $instrument->is_private,
             ], $old_input);
         } else {
             $instrument_data = (object) [
@@ -156,6 +160,7 @@ class InstrumentController
                 'country_code' => $instrument->country_code,
                 'trading_currency' => $instrument->trading_currency,
                 'dividend_payer_id' => $instrument->dividend_payer_id,
+                'is_private' => $instrument->is_private,
             ];
         }
 
@@ -178,6 +183,7 @@ class InstrumentController
             'country_code' => $_POST['country_code'] ?? '',
             'trading_currency' => $_POST['trading_currency'] ?? '',
             'dividend_payer_id' => $_POST['dividend_payer_id'] ?? '',
+            'is_private' => $_POST['is_private'] ?? '0',
         ];
 
         try {

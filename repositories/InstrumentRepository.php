@@ -14,7 +14,7 @@ class InstrumentRepository
     public function search(string $q = '', int $limit = 200): array
     {
         $sql = '
-            SELECT id, isin, ticker, name, instrument_type, country_code, trading_currency, dividend_payer_id
+            SELECT id, isin, ticker, name, instrument_type, country_code, trading_currency, dividend_payer_id, is_private
             FROM instrument
         ';
 
@@ -50,7 +50,8 @@ class InstrumentRepository
                 $row['instrument_type'],
                 $row['country_code'],
                 $row['trading_currency'],
-                $row['dividend_payer_id'] ? (int) $row['dividend_payer_id'] : null
+                $row['dividend_payer_id'] ? (int) $row['dividend_payer_id'] : null,
+                (bool) $row['is_private']
             );
         }
 
@@ -77,6 +78,7 @@ class InstrumentRepository
                 i.country_code, 
                 i.trading_currency, 
                 i.dividend_payer_id,
+                i.is_private,
                 CASE WHEN wli.instrument_id IS NULL THEN 0 ELSE 1 END AS is_in_watchlist
             FROM instrument i
             LEFT JOIN watchlist_item wli ON i.id = wli.instrument_id AND wli.watchlist_id = :watchlist_id
@@ -112,7 +114,8 @@ class InstrumentRepository
                     $row['instrument_type'],
                     $row['country_code'],
                     $row['trading_currency'],
-                    $row['dividend_payer_id'] ? (int) $row['dividend_payer_id'] : null
+                    $row['dividend_payer_id'] ? (int) $row['dividend_payer_id'] : null,
+                    (bool) $row['is_private']
                 ),
                 'is_in_watchlist' => (bool) $row['is_in_watchlist'],
             ];
@@ -124,7 +127,7 @@ class InstrumentRepository
     public function find_by_id(int $id): ?Instrument
     {
         $stmt = $this->db->prepare('
-            SELECT id, isin, ticker, name, instrument_type, country_code, trading_currency, dividend_payer_id
+            SELECT id, isin, ticker, name, instrument_type, country_code, trading_currency, dividend_payer_id, is_private
             FROM instrument
             WHERE id = :id
         ');
@@ -143,15 +146,16 @@ class InstrumentRepository
             $row['instrument_type'],
             $row['country_code'],
             $row['trading_currency'],
-            $row['dividend_payer_id'] ? (int) $row['dividend_payer_id'] : null
+            $row['dividend_payer_id'] ? (int) $row['dividend_payer_id'] : null,
+            (bool) $row['is_private']
         );
     }
 
     public function create(array $data): int
     {
         $stmt = $this->db->prepare('
-            INSERT INTO instrument (isin, ticker, name, instrument_type, country_code, trading_currency, dividend_payer_id)
-            VALUES (:isin, :ticker, :name, :instrument_type, :country_code, :trading_currency, :dividend_payer_id)
+            INSERT INTO instrument (isin, ticker, name, instrument_type, country_code, trading_currency, dividend_payer_id, is_private)
+            VALUES (:isin, :ticker, :name, :instrument_type, :country_code, :trading_currency, :dividend_payer_id, :is_private)
         ');
         $stmt->execute([
             'isin' => $data['isin'] ?? null,
@@ -161,6 +165,7 @@ class InstrumentRepository
             'country_code' => $data['country_code'] ?? null,
             'trading_currency' => $data['trading_currency'] ?? null,
             'dividend_payer_id' => $data['dividend_payer_id'] ?? null,
+            'is_private' => isset($data['is_private']) ? (int) $data['is_private'] : 0,
         ]);
 
         return (int) $this->db->lastInsertId();
@@ -176,7 +181,8 @@ class InstrumentRepository
                 instrument_type = :instrument_type,
                 country_code = :country_code,
                 trading_currency = :trading_currency,
-                dividend_payer_id = :dividend_payer_id
+                dividend_payer_id = :dividend_payer_id,
+                is_private = :is_private
             WHERE id = :id
         ');
         $stmt->execute([
@@ -188,6 +194,7 @@ class InstrumentRepository
             'country_code' => $data['country_code'] ?? null,
             'trading_currency' => $data['trading_currency'] ?? null,
             'dividend_payer_id' => $data['dividend_payer_id'] ?? null,
+            'is_private' => isset($data['is_private']) ? (int) $data['is_private'] : 0,
         ]);
     }
 }

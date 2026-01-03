@@ -47,6 +47,7 @@ class InstrumentService
         $data = [
             'name' => trim($input['name']),
             'instrument_type' => $input['instrument_type'],
+            'is_private' => isset($input['is_private']) && $input['is_private'] === '1',
         ];
 
         if (isset($input['isin']) && $input['isin'] !== '') {
@@ -88,6 +89,7 @@ class InstrumentService
         $data = [
             'name' => trim($input['name']),
             'instrument_type' => $input['instrument_type'],
+            'is_private' => isset($input['is_private']) && $input['is_private'] === '1',
         ];
 
         if (isset($input['isin']) && $input['isin'] !== '') {

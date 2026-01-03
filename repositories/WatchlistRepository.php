@@ -210,7 +210,7 @@ class WatchlistRepository
         }
         
         $stmt = $this->db->prepare('
-            SELECT i.id, i.isin, i.ticker, i.name, i.instrument_type, i.country_code, i.trading_currency, i.dividend_payer_id
+            SELECT i.id, i.isin, i.ticker, i.name, i.instrument_type, i.country_code, i.trading_currency, i.dividend_payer_id, i.is_private
             FROM watchlist_item wi
             INNER JOIN instrument i ON wi.instrument_id = i.id
             WHERE wi.watchlist_id = :watchlist_id
@@ -229,7 +229,8 @@ class WatchlistRepository
                 $row['instrument_type'],
                 $row['country_code'],
                 $row['trading_currency'],
-                $row['dividend_payer_id'] ? (int) $row['dividend_payer_id'] : null
+                $row['dividend_payer_id'] ? (int) $row['dividend_payer_id'] : null,
+                (bool) $row['is_private']
             );
         }
         

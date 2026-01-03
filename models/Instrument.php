@@ -12,7 +12,8 @@ class Instrument
         public readonly string $instrument_type,
         public readonly ?string $country_code,
         public readonly ?string $trading_currency,
-        public readonly ?int $dividend_payer_id
+        public readonly ?int $dividend_payer_id,
+        public readonly bool $is_private
     ) {
     }
 }
