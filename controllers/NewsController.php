@@ -258,5 +258,69 @@ class NewsController
             echo json_encode(['error' => 'Internal server error']);
         }
     }
+
+    public function key_dates(): void
+    {
+        $user_id = current_user_id();
+        if ($user_id === null) {
+            header('Location: ?action=login');
+            exit;
+        }
+
+        // Get filter parameters
+        $date_range = isset($_GET['range']) && $_GET['range'] !== '' ? $_GET['range'] : 'upcoming';
+        $type = isset($_GET['type']) && $_GET['type'] !== '' ? $_GET['type'] : null;
+        $ticker = isset($_GET['ticker']) && $_GET['ticker'] !== '' ? trim($_GET['ticker']) : null;
+
+        // Validate date_range
+        $valid_ranges = ['upcoming', 'past_30', 'next_30', 'next_90', 'all'];
+        if (!in_array($date_range, $valid_ranges, true)) {
+            $date_range = 'upcoming';
+        }
+
+        // Get holdings tickers (for highlighting in the view)
+        $holdings_service = new HoldingsService();
+        $holdings_result = $holdings_service->get_holdings($user_id);
+        $holdings = $holdings_result['holdings'];
+        
+        // Extract tickers from holdings
+        $holdings_tickers_list = [];
+        foreach ($holdings as $holding) {
+            if (isset($holding['instrument']) && $holding['instrument']->ticker !== null && $holding['instrument']->ticker !== '') {
+                $holdings_tickers_list[] = strtoupper(trim($holding['instrument']->ticker));
+            }
+        }
+        // Remove duplicates and create lookup array for fast checking
+        $holdings_tickers_list = array_unique($holdings_tickers_list);
+        $holdings_tickers_lookup = array_flip($holdings_tickers_list);
+
+        // Get watchlist tickers (for highlighting in the view)
+        $watchlist_repo = new WatchlistRepository();
+        $watchlists = $watchlist_repo->list_by_user($user_id);
+        $watchlist_tickers_list = [];
+        foreach ($watchlists as $watchlist) {
+            $instruments = $watchlist_repo->list_instruments_by_watchlist_id($user_id, $watchlist->id);
+            foreach ($instruments as $instrument) {
+                if ($instrument->ticker !== null && $instrument->ticker !== '') {
+                    $ticker_upper = strtoupper(trim($instrument->ticker));
+                    // Only add if not already in holdings (holdings take priority)
+                    if (!isset($holdings_tickers_lookup[$ticker_upper])) {
+                        $watchlist_tickers_list[] = $ticker_upper;
+                    }
+                }
+            }
+        }
+        // Remove duplicates and create lookup array for fast checking
+        $watchlist_tickers_list = array_unique($watchlist_tickers_list);
+        $watchlist_tickers_lookup = array_flip($watchlist_tickers_list);
+
+        // Get key dates
+        $key_dates = $this->news_service->get_key_dates($date_range, $type, $ticker);
+
+        // Get unique types for filter dropdown
+        $unique_types = $this->news_service->get_unique_key_date_types();
+
+        require __DIR__ . '/../views/news/key_dates.php';
+    }
 }
 

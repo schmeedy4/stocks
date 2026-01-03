@@ -256,5 +256,29 @@ class NewsArticleService
 
         return $errors;
     }
+
+    /**
+     * Get key dates from news articles.
+     */
+    public function get_key_dates(
+        string $date_range = 'upcoming',
+        ?string $type = null,
+        ?string $ticker = null
+    ): array {
+        // Get today's date in Europe/Ljubljana timezone
+        $tz = new \DateTimeZone('Europe/Ljubljana');
+        $today = new \DateTimeImmutable('now', $tz);
+        $today_date = $today->format('Y-m-d');
+
+        return $this->news_repo->get_key_dates($date_range, $type, $ticker, $today_date);
+    }
+
+    /**
+     * Get unique key date types.
+     */
+    public function get_unique_key_date_types(): array
+    {
+        return $this->news_repo->get_unique_key_date_types();
+    }
 }
 

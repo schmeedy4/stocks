@@ -412,5 +412,153 @@ class NewsArticleRepository
     {
         return $this->get_sentiment_counts_days($ticker, 30);
     }
+
+    /**
+     * Get key dates from news articles using JSON_TABLE.
+     * Returns array of key date rows with article info.
+     */
+    public function get_key_dates(
+        string $date_range = 'upcoming',
+        ?string $type = null,
+        ?string $ticker = null,
+        string $today_date = ''
+    ): array {
+        $sql = '
+            SELECT 
+                STR_TO_DATE(kd.kd_date_str, "%Y-%m-%d") as kd_date,
+                kd.kd_type,
+                kd.kd_horizon,
+                kd.kd_description,
+                kd.kd_tickers,
+                na.id as article_id,
+                na.title as article_title,
+                na.url as article_url,
+                na.sentiment,
+                COALESCE(na.published_at, na.captured_at) as article_date
+            FROM news_article na
+            CROSS JOIN JSON_TABLE(
+                na.key_dates,
+                "$[*]" COLUMNS (
+                    kd_date_str VARCHAR(10) PATH "$.date",
+                    kd_type VARCHAR(32) PATH "$.type",
+                    kd_horizon VARCHAR(32) PATH "$.horizon",
+                    kd_description VARCHAR(512) PATH "$.description",
+                    kd_tickers JSON PATH "$.tickers"
+                )
+            ) AS kd
+            WHERE na.key_dates IS NOT NULL
+            AND JSON_LENGTH(na.key_dates) > 0
+            AND kd.kd_date_str IS NOT NULL
+            AND kd.kd_date_str != ""
+        ';
+
+        $params = [];
+
+        // Date range filter
+        if ($date_range !== 'all' && $today_date !== '') {
+            switch ($date_range) {
+                case 'upcoming':
+                    $sql .= ' AND STR_TO_DATE(kd.kd_date_str, "%Y-%m-%d") >= :today_date';
+                    $params['today_date'] = $today_date;
+                    break;
+                case 'past_30':
+                    $sql .= ' AND STR_TO_DATE(kd.kd_date_str, "%Y-%m-%d") >= DATE_SUB(:today_date_past, INTERVAL 30 DAY)';
+                    $sql .= ' AND STR_TO_DATE(kd.kd_date_str, "%Y-%m-%d") < :today_date_past2';
+                    $params['today_date_past'] = $today_date;
+                    $params['today_date_past2'] = $today_date;
+                    break;
+                case 'next_30':
+                    $sql .= ' AND STR_TO_DATE(kd.kd_date_str, "%Y-%m-%d") >= :today_date_next';
+                    $sql .= ' AND STR_TO_DATE(kd.kd_date_str, "%Y-%m-%d") <= DATE_ADD(:today_date_next2, INTERVAL 30 DAY)';
+                    $params['today_date_next'] = $today_date;
+                    $params['today_date_next2'] = $today_date;
+                    break;
+                case 'next_90':
+                    $sql .= ' AND STR_TO_DATE(kd.kd_date_str, "%Y-%m-%d") >= :today_date_90';
+                    $sql .= ' AND STR_TO_DATE(kd.kd_date_str, "%Y-%m-%d") <= DATE_ADD(:today_date_90_2, INTERVAL 90 DAY)';
+                    $params['today_date_90'] = $today_date;
+                    $params['today_date_90_2'] = $today_date;
+                    break;
+            }
+        }
+
+        // Type filter
+        if ($type !== null && $type !== '') {
+            $sql .= ' AND kd.kd_type = :type';
+            $params['type'] = $type;
+        }
+
+        // Ticker filter
+        if ($ticker !== null && $ticker !== '') {
+            $sql .= ' AND JSON_SEARCH(kd.kd_tickers, "one", :ticker, NULL, "$[*]") IS NOT NULL';
+            $params['ticker'] = strtoupper(trim($ticker));
+        }
+
+        // Sort: date ASC, ticker, then article_date DESC
+        $sql .= ' ORDER BY kd_date ASC, kd.kd_tickers ASC, article_date DESC LIMIT 500';
+
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $results = [];
+
+        foreach ($rows as $row) {
+            // Parse tickers JSON array to comma-separated string
+            $tickers_json = json_decode($row['kd_tickers'], true) ?? [];
+            $tickers_str = implode(', ', $tickers_json);
+
+            $results[] = [
+                'date' => $row['kd_date'],
+                'type' => $row['kd_type'],
+                'horizon' => $row['kd_horizon'],
+                'description' => $row['kd_description'],
+                'tickers' => $tickers_str,
+                'tickers_array' => $tickers_json,
+                'article_id' => (int) $row['article_id'],
+                'article_title' => $row['article_title'],
+                'article_url' => $row['article_url'],
+                'sentiment' => $row['sentiment'],
+                'article_date' => $row['article_date'],
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Get unique key date types from all news articles.
+     */
+    public function get_unique_key_date_types(): array
+    {
+        $sql = '
+            SELECT DISTINCT kd.kd_type
+            FROM news_article na
+            CROSS JOIN JSON_TABLE(
+                na.key_dates,
+                "$[*]" COLUMNS (
+                    kd_type VARCHAR(32) PATH "$.type"
+                )
+            ) AS kd
+            WHERE na.key_dates IS NOT NULL
+            AND JSON_LENGTH(na.key_dates) > 0
+            AND kd.kd_type IS NOT NULL
+            AND kd.kd_type != ""
+            ORDER BY kd.kd_type ASC
+        ';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+
+        $types = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $types[] = $row['kd_type'];
+        }
+
+        return $types;
+    }
 }
 

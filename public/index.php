@@ -379,6 +379,11 @@ switch ($action) {
         $controller->toggle_read_post();
         break;
 
+    case 'key_dates':
+        $controller = new NewsController();
+        $controller->key_dates();
+        break;
+
     case 'watchlist':
         $controller = new WatchlistController();
         $controller->list();

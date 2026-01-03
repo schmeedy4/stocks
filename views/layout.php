@@ -101,6 +101,9 @@
                         <a href="?action=news" class="<?= get_link_classes('news', $current_action) ?>">
                             News
                         </a>
+                        <a href="?action=key_dates" class="<?= get_link_classes('key_dates', $current_action) ?>">
+                            Key Dates
+                        </a>
                         <div class="pt-2">
                             <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                 Watchlists
@@ -125,7 +128,7 @@
             
             <!-- Main Content -->
             <main class="flex-1 overflow-x-hidden">
-                <div class="<?= $current_action === 'holdings' ? '' : (in_array($current_action, ['news', 'trades', 'dividends', 'watchlist', 'instruments']) ? 'max-w-12xl mx-auto' : 'max-w-7xl mx-auto') ?> px-6 py-8">
+                <div class="<?= $current_action === 'holdings' ? '' : (in_array($current_action, ['news', 'key_dates', 'trades', 'dividends', 'watchlist', 'instruments']) ? 'max-w-12xl mx-auto' : 'max-w-7xl mx-auto') ?> px-6 py-8">
                     <?php if (isset($content)): ?>
                         <?= $content ?>
                     <?php endif; ?>
