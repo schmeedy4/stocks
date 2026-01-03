@@ -13,7 +13,7 @@ ob_start();
 
 <!-- Filters -->
 <div class="bg-white rounded-lg shadow p-4 mb-6">
-    <form method="GET" action="?action=news" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+    <form method="GET" action="?action=news" class="grid grid-cols-1 md:grid-cols-7 gap-4">
         <input type="hidden" name="action" value="news">
         
         <!-- Ticker -->
@@ -40,6 +40,20 @@ ob_start();
                 <option value="all" <?= ($_GET['show_only'] ?? 'all') === 'all' ? 'selected' : '' ?>>All</option>
                 <option value="holdings" <?= ($_GET['show_only'] ?? '') === 'holdings' ? 'selected' : '' ?>>Holdings</option>
                 <option value="watchlist" <?= ($_GET['show_only'] ?? '') === 'watchlist' ? 'selected' : '' ?>>Watchlist</option>
+            </select>
+        </div>
+
+        <!-- Read Status -->
+        <div>
+            <label for="read_status" class="block text-sm font-medium text-gray-700 mb-1">Read</label>
+            <select 
+                id="read_status" 
+                name="read_status"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+                <option value="all" <?= ($_GET['read_status'] ?? 'all') === 'all' ? 'selected' : '' ?>>All</option>
+                <option value="read" <?= ($_GET['read_status'] ?? '') === 'read' ? 'selected' : '' ?>>Read</option>
+                <option value="unread" <?= ($_GET['read_status'] ?? '') === 'unread' ? 'selected' : '' ?>>Unread</option>
             </select>
         </div>
 
@@ -106,7 +120,7 @@ ob_start();
             </select>
         </div>
 
-        <div class="md:col-span-5 flex gap-2">
+        <div class="md:col-span-6 flex gap-2">
             <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 Apply Filters
             </button>

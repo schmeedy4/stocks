@@ -33,6 +33,7 @@ class NewsController
         $min_read_grade = isset($_GET['min_read_grade']) && $_GET['min_read_grade'] !== '' 
             ? (int) $_GET['min_read_grade'] 
             : null;
+        $read_status = isset($_GET['read_status']) && $_GET['read_status'] !== '' ? $_GET['read_status'] : 'all';
         $show_only = isset($_GET['show_only']) && $_GET['show_only'] !== '' ? $_GET['show_only'] : 'all';
         $sort = isset($_GET['sort']) && $_GET['sort'] !== '' ? $_GET['sort'] : 'captured_desc';
         $page = isset($_GET['page']) && $_GET['page'] !== '' ? max(1, (int) $_GET['page']) : 1;
@@ -108,7 +109,8 @@ class NewsController
             $sort,
             $page,
             $limit,
-            $user_id
+            $user_id,
+            $read_status
         );
 
         $articles = $result['items'];

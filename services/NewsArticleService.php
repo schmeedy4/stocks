@@ -26,7 +26,8 @@ class NewsArticleService
         string $sort = 'captured_desc',
         int $page = 1,
         int $limit = 25,
-        ?int $user_id = null
+        ?int $user_id = null,
+        string $read_status = 'all'
     ): array {
         $result = $this->news_repo->search(
             $ticker,
@@ -37,7 +38,9 @@ class NewsArticleService
             $watchlist_tickers,
             $sort,
             $page,
-            $limit
+            $limit,
+            $user_id,
+            $read_status
         );
 
         // Add read status if user_id is provided
