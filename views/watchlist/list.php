@@ -192,8 +192,22 @@ document.getElementById('addInstrumentModal').addEventListener('click', function
                                     <button type="submit" class="text-yellow-500 hover:text-yellow-700" title="Remove from watchlist">★</button>
                                 </form>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($instrument->isin ?? '') ?></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($instrument->ticker ?? '') ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <?php if ($instrument->is_private): ?>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
+                                        Private
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-gray-900"><?= htmlspecialchars($instrument->isin ?? '') ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <?php if ($instrument->is_private): ?>
+                                    <span class="text-gray-400">—</span>
+                                <?php else: ?>
+                                    <?= htmlspecialchars($instrument->ticker ?? '') ?>
+                                <?php endif; ?>
+                            </td>
                             <td class="px-6 py-4 text-sm text-gray-900"><?= htmlspecialchars($instrument->name) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($instrument->instrument_type) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($instrument->country_code ?? '') ?></td>
