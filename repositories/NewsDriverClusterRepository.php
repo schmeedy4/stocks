@@ -110,6 +110,55 @@ class NewsDriverClusterRepository
     }
 
     /**
+     * Get usage counts for cluster_keys.
+     * @param array $cluster_keys Array of cluster_key strings
+     * @return array Map of cluster_key => usage_count
+     */
+    public function get_usage_counts_by_keys(array $cluster_keys): array
+    {
+        if (empty($cluster_keys)) {
+            return [];
+        }
+
+        // Prepare placeholders for IN clause
+        $placeholders = [];
+        $params = [];
+        foreach ($cluster_keys as $index => $key) {
+            $param_name = 'key_' . $index;
+            $placeholders[] = ':' . $param_name;
+            $params[$param_name] = $key;
+        }
+
+        $sql = '
+            SELECT 
+                jt.cluster_key COLLATE utf8mb4_unicode_ci as cluster_key,
+                COUNT(*) as usage_count
+            FROM news_article
+            CROSS JOIN JSON_TABLE(
+                news_article.drivers,
+                "$[*]" COLUMNS (
+                    cluster_key VARCHAR(64) PATH "$.cluster_key"
+                )
+            ) AS jt
+            WHERE jt.cluster_key IS NOT NULL
+              AND jt.cluster_key != ""
+              AND JSON_VALID(news_article.drivers) = 1
+              AND jt.cluster_key COLLATE utf8mb4_unicode_ci IN (' . implode(', ', $placeholders) . ')
+            GROUP BY jt.cluster_key COLLATE utf8mb4_unicode_ci
+        ';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        $result = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $result[strtolower($row['cluster_key'])] = (int) $row['usage_count'];
+        }
+
+        return $result;
+    }
+
+    /**
      * Upsert cluster_keys from a drivers array into news_driver_cluster registry.
      * Extracts cluster_keys from drivers and inserts missing ones.
      * @param array $drivers Array of driver objects, each with optional cluster_key and title

@@ -218,6 +218,40 @@ ob_start();
                                 >
                                     <?= htmlspecialchars($article->title) ?>
                                 </a>
+                                <?php 
+                                // Display cluster tags
+                                $article_keys = $article_cluster_keys[$article->id] ?? [];
+                                if (!empty($article_keys)): 
+                                    // Sort by usage count (most popular first), then by key
+                                    usort($article_keys, function($a, $b) use ($cluster_usage_counts) {
+                                        $count_a = $cluster_usage_counts[$a] ?? 0;
+                                        $count_b = $cluster_usage_counts[$b] ?? 0;
+                                        if ($count_a !== $count_b) {
+                                            return $count_b <=> $count_a; // Descending by usage count
+                                        }
+                                        return strcmp($a, $b); // Ascending by key if counts equal
+                                    });
+                                    
+                                    $display_keys = array_slice($article_keys, 0, 3);
+                                    $remaining_keys = array_slice($article_keys, 3);
+                                    $remaining = count($remaining_keys);
+                                ?>
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                        <?php foreach ($display_keys as $key): ?>
+                                            <span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                                                <?= htmlspecialchars($key) ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                        <?php if ($remaining > 0): ?>
+                                            <span 
+                                                class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium"
+                                                title="<?= htmlspecialchars(implode(', ', $remaining_keys)) ?>"
+                                            >
+                                                +<?= $remaining ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
                             </td>
                             <td class="px-6 py-4 text-sm">
                                 <?php if (!empty($article->tickers)): ?>

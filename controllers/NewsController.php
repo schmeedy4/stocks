@@ -121,6 +121,35 @@ class NewsController
         $total = $result['total'];
         $total_pages = (int) ceil($total / $limit);
 
+        // Extract cluster_keys from all articles and build a map of cluster_key => usage_count
+        $all_cluster_keys = [];
+        $article_cluster_keys = [];
+        
+        foreach ($articles as $article) {
+            $article_keys = [];
+            if (isset($article->drivers) && is_array($article->drivers)) {
+                foreach ($article->drivers as $driver) {
+                    if (isset($driver['cluster_key']) && is_string($driver['cluster_key'])) {
+                        $key = strtolower(trim($driver['cluster_key']));
+                        if ($key !== '' && !in_array($key, $article_keys, true)) {
+                            $article_keys[] = $key;
+                            if (!in_array($key, $all_cluster_keys, true)) {
+                                $all_cluster_keys[] = $key;
+                            }
+                        }
+                    }
+                }
+            }
+            $article_cluster_keys[$article->id] = $article_keys;
+        }
+
+        // Fetch usage counts for all cluster_keys in one query
+        $cluster_usage_counts = [];
+        if (!empty($all_cluster_keys)) {
+            $cluster_repo = new NewsDriverClusterRepository();
+            $cluster_usage_counts = $cluster_repo->get_usage_counts_by_keys($all_cluster_keys);
+        }
+
         require __DIR__ . '/../views/news/list.php';
     }
 
