@@ -134,7 +134,7 @@ if ($update_5days_result !== null) {
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                 <?php if ($latest_price !== null): ?>
-                                    <?= date('H:i:s d.m.Y', strtotime($latest_price->fetched_at)) ?>
+                                    <?= date('d.m.Y H:i:s', strtotime($latest_price->fetched_at)) ?>
                                 <?php else: ?>
                                     <em class="text-gray-400">-</em>
                                 <?php endif; ?>

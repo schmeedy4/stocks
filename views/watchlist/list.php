@@ -228,7 +228,7 @@ document.getElementById('addInstrumentModal').addEventListener('click', function
                                         </span>
                                     <?php endif; ?>
                                     <?php if ($counts_30d['neutral'] > 0): ?>
-                                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
                                             <?= $counts_30d['neutral'] ?>
                                         </span>
                                     <?php endif; ?>
@@ -258,7 +258,7 @@ document.getElementById('addInstrumentModal').addEventListener('click', function
                                         </span>
                                     <?php endif; ?>
                                     <?php if ($counts_90d['neutral'] > 0): ?>
-                                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
                                             <?= $counts_90d['neutral'] ?>
                                         </span>
                                     <?php endif; ?>

@@ -25,34 +25,65 @@ ob_start();
     <input type="hidden" name="action" value="dashboard">
 </form>
 
-<?php if (empty($sell_trades)): ?>
+<?php if (empty($sell_trades) && (float)$dividend_gross_amount_eur == 0): ?>
     <div class="bg-white rounded-lg shadow p-6">
-        <p class="text-gray-600">No SELL trades found for <?= htmlspecialchars((string)$selected_year) ?>.</p>
+        <p class="text-gray-600">No SELL trades or dividends found for <?= htmlspecialchars((string)$selected_year) ?>.</p>
     </div>
 <?php else: ?>
     <div class="mb-8">
         <h2 class="text-2xl font-semibold text-gray-900 mb-4">Year Summary</h2>
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap font-semibold text-gray-900 w-64">Total Proceeds (EUR):</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-700 text-right"><?= htmlspecialchars($sum_proceeds_eur) ?></td>
-                    </tr>
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">Tax before losses (EUR):</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-700 text-right"><?= htmlspecialchars($tax_before_losses_eur) ?></td>
-                    </tr>
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">Total Losses Offset (EUR):</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-700 text-right"><?= htmlspecialchars($total_losses_offset_eur) ?></td>
-                    </tr>
-                    <tr class="border-t-2 border-gray-300">
-                        <td class="px-6 py-4 whitespace-nowrap font-bold text-gray-900">Final Tax (EUR):</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-900 text-right font-bold"><?= htmlspecialchars($final_tax_eur) ?></td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Sells Table -->
+            <?php if (!empty($sell_trades)): ?>
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <h3 class="px-6 py-3 bg-gray-50 text-lg font-semibold text-gray-900 border-b border-gray-200">Sells</h3>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-semibold text-gray-900 w-64">Total Proceeds (EUR):</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-700 text-right"><?= htmlspecialchars($sum_proceeds_eur) ?></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">Tax before losses (EUR):</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-700 text-right"><?= htmlspecialchars($tax_before_losses_eur) ?></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">Total Losses Offset (EUR):</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-700 text-right"><?= htmlspecialchars($total_losses_offset_eur) ?></td>
+                        </tr>
+                        <tr class="border-t-2 border-gray-300">
+                            <td class="px-6 py-4 whitespace-nowrap font-bold text-gray-900">Final Tax (EUR):</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-900 text-right font-bold"><?= htmlspecialchars($final_tax_eur) ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Dividends Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <h3 class="px-6 py-3 bg-gray-50 text-lg font-semibold text-gray-900 border-b border-gray-200">Dividends</h3>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-semibold text-gray-900 w-64">Gross Amount EUR:</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-700 text-right"><?= htmlspecialchars(number_format((float)$dividend_gross_amount_eur, 2, '.', '')) ?></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">Foreign Tax EUR:</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-700 text-right"><?= htmlspecialchars(number_format((float)$dividend_foreign_tax_eur, 2, '.', '')) ?></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">Slovenian Tax (10%):</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-700 text-right"><?= htmlspecialchars(number_format((float)$dividend_slovenian_tax_eur, 2, '.', '')) ?></td>
+                        </tr>
+                        <tr class="border-t-2 border-gray-300">
+                            <td class="px-6 py-4 whitespace-nowrap font-bold text-gray-900">Profit:</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-900 text-right font-bold"><?= htmlspecialchars(number_format((float)$dividend_profit_eur, 2, '.', '')) ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

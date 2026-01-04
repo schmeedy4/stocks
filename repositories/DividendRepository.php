@@ -199,5 +199,32 @@ class DividendRepository
             'is_voided' => $is_voided ? 1 : 0,
         ]);
     }
+
+    public function get_year_totals(int $user_id, int $year): array
+    {
+        $stmt = $this->db->prepare('
+            SELECT 
+                COALESCE(SUM(gross_amount_eur), 0) as total_gross_amount_eur,
+                COALESCE(SUM(foreign_tax_eur), 0) as total_foreign_tax_eur
+            FROM dividend
+            WHERE user_id = :user_id
+              AND YEAR(received_date) = :year
+              AND is_voided = 0
+        ');
+        $stmt->execute(['user_id' => $user_id, 'year' => $year]);
+        $row = $stmt->fetch();
+
+        if ($row === false) {
+            return [
+                'total_gross_amount_eur' => '0.00',
+                'total_foreign_tax_eur' => '0.00',
+            ];
+        }
+
+        return [
+            'total_gross_amount_eur' => $row['total_gross_amount_eur'] ?? '0.00',
+            'total_foreign_tax_eur' => $row['total_foreign_tax_eur'] ?? '0.00',
+        ];
+    }
 }
 

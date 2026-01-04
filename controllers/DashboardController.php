@@ -6,6 +6,7 @@ class DashboardController
 {
     private TradeService $trade_service;
     private InstrumentRepository $instrument_repo;
+    private DividendRepository $dividend_repo;
 
     public function __construct()
     {
@@ -14,6 +15,7 @@ class DashboardController
 
         $this->trade_service = new TradeService();
         $this->instrument_repo = new InstrumentRepository();
+        $this->dividend_repo = new DividendRepository();
     }
 
     public function index(): void
@@ -97,6 +99,18 @@ class DashboardController
         if (bccomp($final_tax_eur, '0.00', 2) < 0) {
             $final_tax_eur = '0.00';
         }
+
+        // Get dividend totals for the year
+        $dividend_totals = $this->dividend_repo->get_year_totals($user_id, $selected_year);
+        $dividend_gross_amount_eur = $dividend_totals['total_gross_amount_eur'] ?? '0.00';
+        $dividend_foreign_tax_eur = $dividend_totals['total_foreign_tax_eur'] ?? '0.00';
+        
+        // Calculate Slovenian tax (10% of gross amount)
+        $dividend_slovenian_tax_eur = bcmul($dividend_gross_amount_eur, '0.1', 2);
+        
+        // Calculate profit: Gross Amount - Foreign Tax - Slovenian Tax
+        $dividend_profit_eur = bcsub($dividend_gross_amount_eur, $dividend_foreign_tax_eur, 2);
+        $dividend_profit_eur = bcsub($dividend_profit_eur, $dividend_slovenian_tax_eur, 2);
 
         require __DIR__ . '/../views/dashboard.php';
     }
