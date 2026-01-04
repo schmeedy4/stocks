@@ -16,6 +16,23 @@ ob_start();
     </div>
 </div>
 
+<form method="GET" action="?action=trades" class="mb-6 flex items-center gap-3">
+    <label for="year" class="text-sm font-medium text-gray-700">Year:</label>
+    <select id="year" name="year" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        <option value="">All Years</option>
+        <?php
+        $current_year = (int) date('Y');
+        for ($year = $current_year; $year >= $min_year; $year--):
+        ?>
+            <option value="<?= $year ?>" <?= $selected_year == $year ? 'selected' : '' ?>>
+                <?= $year ?>
+            </option>
+        <?php endfor; ?>
+    </select>
+    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">Filter</button>
+    <input type="hidden" name="action" value="trades">
+</form>
+
 <?php if (empty($trades)): ?>
     <div class="bg-white rounded-lg shadow p-6">
         <p class="text-gray-600">No trades found.</p>
@@ -87,6 +104,11 @@ ob_start();
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
+        <div class="px-6 py-3 border-t border-gray-200">
+            <div class="text-sm text-gray-700">
+                Showing <?= count($trades) ?> <?= count($trades) === 1 ? 'trade' : 'trades' ?>
+            </div>
         </div>
     </div>
 <?php endif; ?>

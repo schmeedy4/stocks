@@ -123,6 +123,11 @@ ob_start();
                 </tbody>
             </table>
         </div>
+        <div class="px-6 py-3 border-t border-gray-200">
+            <div class="text-sm text-gray-700">
+                Showing <?= count($instruments) ?> <?= count($instruments) === 1 ? 'instrument' : 'instruments' ?>
+            </div>
+        </div>
     </div>
 <?php endif; ?>
 

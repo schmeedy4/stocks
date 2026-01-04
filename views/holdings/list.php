@@ -72,6 +72,11 @@ ob_start();
                 </tbody>
                 </table>
             </div>
+            <div class="px-4 py-3 border-t border-gray-200">
+                <div class="text-sm text-gray-700">
+                    Showing <?= count($holdings) ?> <?= count($holdings) === 1 ? 'holding' : 'holdings' ?>
+                </div>
+            </div>
         </div>
     <?php endif; ?>
 </div>

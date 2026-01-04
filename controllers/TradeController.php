@@ -28,7 +28,24 @@ class TradeController
             exit;
         }
 
-        $trades = $this->trade_service->list_trades($user_id);
+        // Get year filter (default to all years if not specified)
+        $selected_year = isset($_GET['year']) && $_GET['year'] !== '' 
+            ? (int) $_GET['year'] 
+            : null;
+        
+        // Get min year for year selector
+        $min_year = $this->trade_service->get_min_year($user_id);
+        if ($min_year === null) {
+            $min_year = (int) date('Y');
+        }
+
+        // Build filters
+        $filters = [];
+        if ($selected_year !== null) {
+            $filters['year'] = $selected_year;
+        }
+
+        $trades = $this->trade_service->list_trades($user_id, $filters);
 
         // Get instruments for display
         $instruments = [];
