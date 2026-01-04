@@ -19,6 +19,7 @@ Schema:
 
   "drivers": [
     {
+      "cluster_key": "<snake_case_theme_key>",
       "direction": "bullish|bearish|neutral",
       "impact_score": <integer -5..+5>,
       "title": "<max 8 words>",
@@ -45,37 +46,77 @@ Instructions:
 - Use ONLY the provided input JSON.
 - Copy through the following fields exactly from the input (do not modify values):
   - source, url, tickers, title, published_at, captured_at, author_name, author_url, author_followers
-- If any of those fields are missing in the input, return null for that field (except captured_at/url/source/title which should usually exist).
+- If any of those fields are missing in the input, return null for that field
+  (except captured_at/url/source/title which should usually exist).
 - If article_text is null or missing, rely on snippet and summary_bullets.
-- Sentiment definitions:
-  - bullish: likely positive impact
-  - bearish: likely negative impact
-  - neutral: informational or unclear impact
-  - mixed: meaningful pros and cons
-- Confidence (0–100): how explicit and material the impacts are.
-- Drivers:
-  - Provide 3–7 drivers.
-  - Each driver must include direction, impact_score, and evidence.
-- impact_score rubric:
-  - +5 / -5: clearly material, strongly emphasized
-  - +3 / -3: meaningful
-  - +1 / -1: minor
-  - 0: unclear/descriptive
-- key_dates:
-  - Include ONLY explicitly stated dates.
-  - Do NOT infer or guess dates.
-  - Horizon rules (relative to published_at; if published_at missing, use captured_at):
-    - near_term: ≤ 90 days
-    - mid_term: > 90 days and ≤ 18 months
-    - long_term: > 18 months
-- read_grade (1–5):
-  - 5: must-read, new insights or major catalyst
-  - 4: very good, solid analysis or important update
-  - 3: decent, confirms known info
-  - 2: weak, low signal
-  - 1: skip, fluff or no insight
-- tags: 3–8 concise lowercase snake_case tags
-- recap: max 100 words, neutral tone, no recommendations
+
+Sentiment definitions:
+- bullish: likely positive impact
+- bearish: likely negative impact
+- neutral: informational or unclear impact
+- mixed: meaningful pros and cons
+
+Confidence (0–100):
+- How explicit and material the impacts are.
+
+Drivers:
+- Provide 3–7 drivers.
+- Each driver MUST include:
+  - cluster_key
+  - direction
+  - impact_score
+  - title
+  - detail
+  - evidence
+
+cluster_key rules (IMPORTANT):
+- cluster_key is a short, stable, snake_case identifier representing the underlying theme.
+- Reuse the SAME cluster_key for semantically similar drivers across articles.
+- Prefer broader, reusable themes over narrow or article-specific ones.
+- Do NOT create near-duplicate keys with slightly different wording.
+- If an existing cluster_key reasonably fits, reuse it exactly.
+- Only create a new cluster_key if none of the existing ones apply.
+
+Existing cluster_keys (reuse if applicable):
+- (none yet; create appropriate general keys as needed)
+
+Examples of good cluster_keys:
+- hbm_demand_strength
+- capex_cycle_risk
+- oversupply_risk
+- valuation_cyclical_peak
+- regulatory_risk
+- earnings_momentum
+- guidance_uncertainty
+
+impact_score rubric:
+- +5 / -5: clearly material, strongly emphasized
+- +3 / -3: meaningful
+- +1 / -1: minor
+- 0: unclear or descriptive only
+
+key_dates:
+- Include ONLY explicitly stated dates.
+- Do NOT infer or guess dates.
+- Horizon rules (relative to published_at; if published_at missing, use captured_at):
+  - near_term: ≤ 90 days
+  - mid_term: > 90 days and ≤ 18 months
+  - long_term: > 18 months
+
+read_grade (1–5):
+- 5: must-read, new insights or major catalyst
+- 4: very good, solid analysis or important update
+- 3: decent, confirms known info
+- 2: weak, low signal
+- 1: skip, fluff or no insight
+
+tags:
+- 3–8 concise lowercase snake_case tags
+
+recap:
+- Max 100 words
+- Neutral tone
+- No recommendations
 
 Input JSON:
 {{NEWS_JSON}}

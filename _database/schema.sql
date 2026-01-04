@@ -561,3 +561,17 @@ CREATE TABLE watchlist_item (
   CONSTRAINT fk_wli_watchlist FOREIGN KEY (watchlist_id) REFERENCES watchlist(id) ON DELETE CASCADE,
   CONSTRAINT fk_wli_instrument FOREIGN KEY (instrument_id) REFERENCES instrument(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- 19) news_driver_cluster (clusters for drivers)
+-- -----------------------------
+CREATE TABLE news_driver_cluster (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  cluster_key VARCHAR(64) NOT NULL,          -- snake_case, unique
+  title VARCHAR(120) NOT NULL,               -- human label (nice for UI): "CapEx cycle risk"
+  description VARCHAR(255) NULL,             -- optional explanation
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  UNIQUE KEY uniq_cluster_key (cluster_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
