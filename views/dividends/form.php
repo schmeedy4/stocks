@@ -25,10 +25,10 @@ ob_start();
     <form method="POST" action="<?= $is_edit ? '?action=dividend_update&id=' . htmlspecialchars((string)$dividend->id) : '?action=dividend_create' ?>" enctype="multipart/form-data" class="space-y-4">
         <div>
             <label for="instrument_id" class="block text-sm font-medium text-gray-700 mb-1">Instrument (Ticker):</label>
-            <select id="instrument_id" name="instrument_id" class="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            <select id="instrument_id" name="instrument_id" class="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" onchange="updatePayerFromInstrument()">
                 <option value="">(None)</option>
                 <?php foreach ($instruments as $inst): ?>
-                    <option value="<?= $inst->id ?>" <?= ($dividend->instrument_id ?? null) === $inst->id ? 'selected' : '' ?>>
+                    <option value="<?= $inst->id ?>" data-payer-id="<?= $inst->dividend_payer_id ?? '' ?>" <?= ($dividend->instrument_id ?? null) === $inst->id ? 'selected' : '' ?>>
                         <?= htmlspecialchars($inst->ticker ?? $inst->name) ?> - <?= htmlspecialchars($inst->name) ?>
                     </option>
                 <?php endforeach; ?>
@@ -247,6 +247,30 @@ ob_start();
         <?php endforeach; ?>
     <?php endif; ?>
 </div>
+
+<script>
+function updatePayerFromInstrument() {
+    const instrumentSelect = document.getElementById('instrument_id');
+    const payerSelect = document.getElementById('dividend_payer_id');
+    
+    if (!instrumentSelect || !payerSelect) {
+        return;
+    }
+    
+    const selectedOption = instrumentSelect.options[instrumentSelect.selectedIndex];
+    const payerId = selectedOption.getAttribute('data-payer-id');
+    
+    if (payerId && payerId !== '') {
+        // Find and select the payer option
+        for (let i = 0; i < payerSelect.options.length; i++) {
+            if (payerSelect.options[i].value === payerId) {
+                payerSelect.value = payerId;
+                break;
+            }
+        }
+    }
+}
+</script>
 
 <?php
 $content = ob_get_clean();

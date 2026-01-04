@@ -47,7 +47,7 @@ ob_start();
                 <tbody class="bg-white divide-y divide-gray-200">
                     <?php foreach ($dividends as $index => $dividend): ?>
                         <tr class="<?= $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' ?> hover:bg-blue-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($dividend->received_date) ?></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= date('d.m.Y', strtotime($dividend->received_date)) ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <?php if ($dividend->instrument_id !== null && isset($instruments[$dividend->instrument_id])): ?>
                                     <?= htmlspecialchars($instruments[$dividend->instrument_id]->ticker ?? $instruments[$dividend->instrument_id]->name) ?>
