@@ -94,7 +94,7 @@ ob_start();
                     <?php foreach ($key_dates as $index => $kd): ?>
                         <tr class="<?= $index % 2 === 0 ? 'bg-white' : 'bg-gray-50' ?> hover:bg-blue-50">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <?= htmlspecialchars($kd['date']) ?>
+                                <?= $kd['date'] ? date('d.m.Y', strtotime($kd['date'])) : '—' ?>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <?= htmlspecialchars($kd['type'] ?? '') ?>
@@ -161,7 +161,7 @@ ob_start();
                                 <?php endif; ?>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <?= $kd['article_date'] ? date('Y-m-d', strtotime($kd['article_date'])) : '—' ?>
+                                <?= $kd['article_date'] ? date('d.m.Y', strtotime($kd['article_date'])) : '—' ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

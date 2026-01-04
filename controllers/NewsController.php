@@ -23,6 +23,8 @@ class NewsController
         }
 
         // Get filter parameters from query string
+        $title = isset($_GET['title']) && $_GET['title'] !== '' ? trim($_GET['title']) : null;
+        $author = isset($_GET['author']) && $_GET['author'] !== '' ? trim($_GET['author']) : null;
         $ticker = isset($_GET['ticker']) && $_GET['ticker'] !== '' 
             ? strtoupper(trim($_GET['ticker'])) 
             : null;
@@ -110,7 +112,9 @@ class NewsController
             $page,
             $limit,
             $user_id,
-            $read_status
+            $read_status,
+            $title,
+            $author
         );
 
         $articles = $result['items'];

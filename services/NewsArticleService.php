@@ -27,7 +27,9 @@ class NewsArticleService
         int $page = 1,
         int $limit = 25,
         ?int $user_id = null,
-        string $read_status = 'all'
+        string $read_status = 'all',
+        ?string $title = null,
+        ?string $author = null
     ): array {
         $result = $this->news_repo->search(
             $ticker,
@@ -40,7 +42,9 @@ class NewsArticleService
             $page,
             $limit,
             $user_id,
-            $read_status
+            $read_status,
+            $title,
+            $author
         );
 
         // Add read status if user_id is provided

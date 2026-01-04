@@ -26,7 +26,9 @@ class NewsArticleRepository
         int $page = 1,
         int $limit = 25,
         ?int $user_id = null,
-        string $read_status = 'all'
+        string $read_status = 'all',
+        ?string $title = null,
+        ?string $author = null
     ): array {
         $offset = ($page - 1) * $limit;
 
@@ -55,6 +57,18 @@ class NewsArticleRepository
         
         if ($user_id !== null && $read_status !== 'all') {
             $params['read_user_id'] = $user_id;
+        }
+
+        // Filter by title (LIKE search)
+        if ($title !== null && $title !== '') {
+            $sql .= ' AND news_article.title LIKE :title';
+            $params['title'] = '%' . $title . '%';
+        }
+
+        // Filter by author (LIKE search)
+        if ($author !== null && $author !== '') {
+            $sql .= ' AND news_article.author_name LIKE :author';
+            $params['author'] = '%' . $author . '%';
         }
 
         // Filter by ticker (search in tickers JSON column)
@@ -188,6 +202,16 @@ class NewsArticleRepository
         
         if ($user_id !== null && $read_status !== 'all') {
             $count_params['read_user_id'] = $user_id;
+        }
+        
+        if ($title !== null && $title !== '') {
+            $count_sql .= ' AND news_article.title LIKE :title';
+            $count_params['title'] = '%' . $title . '%';
+        }
+
+        if ($author !== null && $author !== '') {
+            $count_sql .= ' AND news_article.author_name LIKE :author';
+            $count_params['author'] = '%' . $author . '%';
         }
         
         if ($ticker !== null && $ticker !== '') {
@@ -494,8 +518,12 @@ class NewsArticleRepository
             $params['ticker'] = strtoupper(trim($ticker));
         }
 
-        // Sort: date ASC, ticker, then article_date DESC
-        $sql .= ' ORDER BY kd_date ASC, kd.kd_tickers ASC, article_date DESC LIMIT 500';
+        // Sort: date ASC for upcoming dates, DESC for past/all dates; then ticker, then article_date DESC
+        if ($date_range === 'past_30' || $date_range === 'all') {
+            $sql .= ' ORDER BY kd_date DESC, kd.kd_tickers ASC, article_date DESC LIMIT 500';
+        } else {
+            $sql .= ' ORDER BY kd_date ASC, kd.kd_tickers ASC, article_date DESC LIMIT 500';
+        }
 
         $stmt = $this->db->prepare($sql);
         foreach ($params as $key => $value) {

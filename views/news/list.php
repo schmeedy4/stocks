@@ -13,8 +13,34 @@ ob_start();
 
 <!-- Filters -->
 <div class="bg-white rounded-lg shadow p-4 mb-6">
-    <form method="GET" action="?action=news" class="grid grid-cols-1 md:grid-cols-7 gap-4">
+    <form method="GET" action="?action=news" class="grid grid-cols-1 md:grid-cols-9 gap-4">
         <input type="hidden" name="action" value="news">
+        
+        <!-- Title Search -->
+        <div>
+            <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input 
+                type="text" 
+                id="title" 
+                name="title" 
+                value="<?= htmlspecialchars($_GET['title'] ?? '') ?>"
+                placeholder="Search title..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+        </div>
+
+        <!-- Author Search -->
+        <div>
+            <label for="author" class="block text-sm font-medium text-gray-700 mb-1">Author</label>
+            <input 
+                type="text" 
+                id="author" 
+                name="author" 
+                value="<?= htmlspecialchars($_GET['author'] ?? '') ?>"
+                placeholder="Search author..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+        </div>
         
         <!-- Ticker -->
         <div>
@@ -120,7 +146,7 @@ ob_start();
             </select>
         </div>
 
-        <div class="md:col-span-6 flex gap-2">
+        <div class="md:col-span-8 flex gap-2">
             <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 Apply Filters
             </button>
@@ -261,10 +287,10 @@ ob_start();
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <?= date('Y-m-d H:i', strtotime($article->captured_at)) ?>
+                                <?= date('d.m.Y H:i', strtotime($article->captured_at)) ?>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <?= $article->published_at ? date('Y-m-d H:i', strtotime($article->published_at)) : '—' ?>
+                                <?= $article->published_at ? date('d.m.Y H:i', strtotime($article->published_at)) : '—' ?>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <button 
