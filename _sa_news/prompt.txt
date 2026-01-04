@@ -78,7 +78,14 @@ cluster_key rules (IMPORTANT):
 - Only create a new cluster_key if none of the existing ones apply.
 
 Existing cluster_keys (reuse if applicable):
-- (none yet; create appropriate general keys as needed)
+- [
+  "broadband_upgrade_cycle",
+  "capital_return_special_dividend",
+  "customer_concentration_risk",
+  "earnings_momentum",
+  "portfolio_simplification_divestitures",
+  "wifi_7_adoption"
+]
 
 Examples of good cluster_keys:
 - hbm_demand_strength

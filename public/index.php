@@ -384,6 +384,11 @@ switch ($action) {
         $controller->key_dates();
         break;
 
+    case 'news_driver_clusters':
+        $controller = new NewsDriverClusterController();
+        $controller->list();
+        break;
+
     case 'watchlist':
         $controller = new WatchlistController();
         $controller->list();

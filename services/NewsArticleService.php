@@ -6,11 +6,13 @@ class NewsArticleService
 {
     private NewsArticleRepository $news_repo;
     private NewsReadRepository $read_repo;
+    private NewsDriverClusterRepository $cluster_repo;
 
     public function __construct()
     {
         $this->news_repo = new NewsArticleRepository();
         $this->read_repo = new NewsReadRepository();
+        $this->cluster_repo = new NewsDriverClusterRepository();
     }
 
     /**
@@ -126,7 +128,14 @@ class NewsArticleService
             $data['author_followers'] = (int) $json_data['author_followers'];
         }
 
-        return $this->news_repo->create_or_update($data);
+        $article_id = $this->news_repo->create_or_update($data);
+
+        // Automatically upsert cluster_keys from drivers into registry
+        if (isset($data['drivers']) && is_array($data['drivers']) && !empty($data['drivers'])) {
+            $this->cluster_repo->upsert_from_drivers($data['drivers']);
+        }
+
+        return $article_id;
     }
 
     /**

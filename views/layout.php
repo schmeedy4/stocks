@@ -98,12 +98,20 @@
                         <a href="?action=corporate_actions" class="<?= get_link_classes('corporate_actions', $current_action) ?>">
                             Corporate Actions
                         </a>
-                        <a href="?action=news" class="<?= get_link_classes('news', $current_action) ?>">
-                            News
-                        </a>
-                        <a href="?action=key_dates" class="<?= get_link_classes('key_dates', $current_action) ?>">
-                            Key Dates
-                        </a>
+                        <div class="pt-2">
+                            <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                News
+                            </div>
+                            <a href="?action=news" class="block px-4 py-2 pl-8 text-sm font-medium rounded-md transition-colors <?= is_active_link('news', $current_action) ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' ?>">
+                                Articles
+                            </a>
+                            <a href="?action=news_driver_clusters" class="block px-4 py-2 pl-8 text-sm font-medium rounded-md transition-colors <?= is_active_link('news_driver_clusters', $current_action) ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' ?>">
+                                Driver clusters
+                            </a>
+                            <a href="?action=key_dates" class="block px-4 py-2 pl-8 text-sm font-medium rounded-md transition-colors <?= is_active_link('key_dates', $current_action) ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' ?>">
+                                Key dates
+                            </a>
+                        </div>
                         <div class="pt-2">
                             <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                 Watchlists
@@ -128,7 +136,7 @@
             
             <!-- Main Content -->
             <main class="flex-1 overflow-x-hidden">
-                <div class="<?= $current_action === 'holdings' ? '' : (in_array($current_action, ['news', 'key_dates', 'trades', 'dividends', 'watchlist', 'instruments']) ? 'max-w-12xl mx-auto' : 'max-w-7xl mx-auto') ?> px-6 py-8">
+                <div class="<?= $current_action === 'holdings' ? '' : (in_array($current_action, ['news', 'news_driver_clusters', 'key_dates', 'trades', 'dividends', 'watchlist', 'instruments']) ? 'max-w-12xl mx-auto' : 'max-w-7xl mx-auto') ?> px-6 py-8">
                     <?php if (isset($content)): ?>
                         <?= $content ?>
                     <?php endif; ?>
