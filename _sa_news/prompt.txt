@@ -78,14 +78,7 @@ cluster_key rules (IMPORTANT):
 - Only create a new cluster_key if none of the existing ones apply.
 
 Existing cluster_keys (reuse if applicable):
-- [
-  "broadband_upgrade_cycle",
-  "capital_return_special_dividend",
-  "customer_concentration_risk",
-  "earnings_momentum",
-  "portfolio_simplification_divestitures",
-  "wifi_7_adoption"
-]
+- ["ai_datacenter_capex_tailwind","broadband_upgrade_cycle","capital_return_special_dividend","custom_ai_silicon_momentum","customer_concentration_risk","earnings_momentum","financing_cost_risk","hyperscaler_capex_risk","portfolio_simplification_divestitures","scale_up_interconnect_tam","valuation_growth_discount","wifi_7_adoption"]
 
 Examples of good cluster_keys:
 - hbm_demand_strength
